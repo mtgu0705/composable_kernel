@@ -155,6 +155,7 @@ else()
     set(GPU_TARGETS "${DEFAULT_GPU_TARGETS}" CACHE STRING " " FORCE)
 endif()
 
+set(DEFAULT_GPU_TARGETS "gfx942")
 message("Supported GPU_TARGETS= ${DEFAULT_GPU_TARGETS}")
 
 if(GPU_TARGETS)
