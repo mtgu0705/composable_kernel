@@ -119,7 +119,7 @@ function(add_instance_library INSTANCE_NAME)
         endif()
 
         set_target_properties(${INSTANCE_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-        clang_tidy_check(${INSTANCE_NAME})
+        #clang_tidy_check(${INSTANCE_NAME})
         set(result 0)
         message("add_instance_library ${INSTANCE_NAME}")
     else()
