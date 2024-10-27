@@ -12,7 +12,7 @@
 #include "ck/tensor_operation/gpu/device/tensor_layout.hpp"
 #include "ck/tensor_operation/gpu/device/device_gemm_v2.hpp"
 #include "ck/tensor_operation/gpu/device/gemm_specialization.hpp"
-#include "ck/tensor_operation/gpu/grid/gridwise_gemm_xdl_cshuffle_v3.hpp"
+#include "ck/tensor_operation/gpu/grid/gridwise_gemm_xdl_cshuffle_v3_b_scale.hpp"
 #include "ck/host_utility/device_prop.hpp"
 #include "ck/host_utility/kernel_launch.hpp"
 #include "ck/host_utility/flush_cache.hpp"
@@ -26,6 +26,7 @@ template <typename ALayout,
           typename CLayout,
           typename ADataType,
           typename BDataType,
+          typename BScaleDataType,
           typename CDataType,
           typename GemmAccDataType,
           typename CShuffleDataType,
@@ -34,6 +35,8 @@ template <typename ALayout,
           typename CElementwiseOperation,
           GemmSpecialization GemmSpec,
           index_t BlockSize,
+          index_t ScaleBlockN, // scale block for N
+          index_t ScaleBlockK, // scale block for K
           index_t MPerBlock,
           index_t NPerBlock,
           index_t KPerBlock,
@@ -67,15 +70,18 @@ template <typename ALayout,
           typename ComputeTypeB                       = ComputeTypeA,
           bool PermuteA                               = false,
           bool PermuteB                               = false>
-struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2<ALayout,
-                                                       BLayout,
-                                                       CLayout,
-                                                       ADataType,
-                                                       BDataType,
-                                                       CDataType,
-                                                       AElementwiseOperation,
-                                                       BElementwiseOperation,
-                                                       CElementwiseOperation>
+struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2BScale<ALayout,
+                                                             BLayout,
+                                                             CLayout,
+                                                             ADataType,
+                                                             BDataType,
+                                                             BScaleDataType,
+                                                             CDataType,
+                                                             ScaleBlockN,
+                                                             ScaleBlockK,
+                                                             AElementwiseOperation,
+                                                             BElementwiseOperation,
+                                                             CElementwiseOperation>
 {
     // GridwiseGemm
     using GridwiseGemm = GridwiseGemm_xdl_cshuffle_v3<
@@ -92,6 +98,8 @@ struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2<ALayout,
         CElementwiseOperation,
         GemmSpec,
         BlockSize,
+        ScaleBlockN,
+        ScaleBlockK,
         MPerBlock,
         NPerBlock,
         KPerBlock,
@@ -210,7 +218,12 @@ struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2<ALayout,
             };
 
             constexpr index_t minimum_occupancy =
-                BlkGemmPipeSched == BlockGemmPipelineScheduler::Intrawave ? 1 : 2;
+                BlkGemmPipeSched == BlockGemmPipelineScheduler::Intrawave
+                    ? (BlkGemmPipelineVer == BlockGemmPipelineVersion::v3 &&
+                       MPerBlock * NPerBlock * KPerBlock * sizeof(ADataType) <= 128 * 128 * 64 * 2)
+                          ? 2
+                          : 1
+                    : 2;
 
             if(has_main_k_block_loop)
             {
@@ -650,12 +663,28 @@ struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2<ALayout,
                              index_t StrideA,
                              index_t StrideB,
                              index_t StrideC,
+                             index_t StrideScaleB,
+                             const BScaleDataType* p_b_scale,
                              index_t KBatch,
-                             AElementwiseOperation,
-                             BElementwiseOperation,
-                             CElementwiseOperation)
+                             AElementwiseOperation a_element_op,
+                             BElementwiseOperation b_element_op,
+                             CElementwiseOperation c_element_op)
     {
-        return Argument{p_a, p_b, p_c, M, N, K, StrideA, StrideB, StrideC, KBatch};
+        return Argument{p_a,
+                        p_b,
+                        p_c,
+                        M,
+                        N,
+                        K,
+                        StrideA,
+                        StrideB,
+                        StrideC,
+                        StrideScaleB,
+                        p_b_scale,
+                        KBatch,
+                        a_element_op,
+                        b_element_op,
+                        c_element_op};
     }
 
     static auto MakeInvoker() { return Invoker{}; }
@@ -670,10 +699,12 @@ struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2<ALayout,
                                                       index_t StrideA,
                                                       index_t StrideB,
                                                       index_t StrideC,
+                                                      index_t StrideScaleB,
+                                                      const void* p_b_scale,
                                                       index_t KBatch,
-                                                      AElementwiseOperation,
-                                                      BElementwiseOperation,
-                                                      CElementwiseOperation) override
+                                                      AElementwiseOperation a_element_op,
+                                                      BElementwiseOperation b_element_op,
+                                                      CElementwiseOperation c_element_op) override
     {
         return std::make_unique<Argument>(static_cast<const ADataType*>(p_a),
                                           static_cast<const BDataType*>(p_b),
@@ -684,7 +715,12 @@ struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2<ALayout,
                                           StrideA,
                                           StrideB,
                                           StrideC,
-                                          KBatch);
+                                          StrideScaleB,
+                                          static_cast<const BScaleDataType*>(p_b_scale),
+                                          KBatch,
+                                          a_element_op,
+                                          b_element_op,
+                                          c_element_op);
     }
 
     // polymorphic

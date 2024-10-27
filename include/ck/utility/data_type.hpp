@@ -12,7 +12,7 @@ using half_t  = _Float16;
 using int4_t  = _BitInt(4);
 using f8_t    = _BitInt(8);
 using bf8_t   = unsigned _BitInt(8);
-using pk_i4_t = unsigned char;
+using pk_i4_t = uint8_t;
 
 // vector_type
 template <typename T, index_t N>
