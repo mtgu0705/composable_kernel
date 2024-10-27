@@ -23,6 +23,8 @@ static constexpr auto GemmDefault = ck::tensor_operation::device::GemmSpecializa
 
 static constexpr bool PermuteB = true;
 
+static constexpr ck::index_t KPerBlock = 128;
+
 // clang-format off
 using DeviceGemmV2Instance = 
     ck::tensor_operation::device::DeviceGemm_Xdl_CShuffleV3<
@@ -30,35 +32,31 @@ using DeviceGemmV2Instance =
         ADataType, BDataType, CDataType, AccDataType, CShuffleDataType, 
         AElementOp, BElementOp, CElementOp, GemmDefault, 
 #if 0
-        64,
-        16, 16, 
-        256, 8, 32,
-        16,   16,
-        1,    1, 
-        S<32, 2, 1>,  S<1, 0, 2>,  S<1, 0, 2>, 
-        2, 8, 8, 1,
-        S<8,  8, 1>,  S<1, 0, 2>,  S<1, 0, 2>, 
-        2, 32, 32, 1,
-        1, 1, S<1, 16, 1, 4>, 4,
-        ck::BlockGemmPipelineScheduler::Interwave, ck::BlockGemmPipelineVersion::v1, CDataType, CDataType, false, PermuteB>;
-
-    [[maybe_unused]] static int KPerBlock = 256;
-#else
         128,
-        16, 32, 
-        128, 8, 32,
+        16, 128,
+        KPerBlock, 8, 32,
         16,   16,
-        1,    1, 
+        1,    4,
         S<16, 8, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
         2, 8, 8, 0,
         S<4, 32, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
         2, 32, 32, 0,
         1, 1, S<1, 16, 1, 8>, 4,
+#else
+        128,
+        16, 64,
+        KPerBlock, 8, 32,
+        16,   16,
+        1,    2,
+        S<16, 8, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
+        2, 8, 8, 0,
+        S<4, 32, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
+        2, 32, 32, 0,
+        1, 1, S<1, 16, 1, 8>, 4,
+#endif
         ck::BlockGemmPipelineScheduler::Interwave, ck::BlockGemmPipelineVersion::v2, CDataType, CDataType, false, PermuteB>;
 
-    [[maybe_unused]]static int KPerBlock = 128;
-#endif
-      // clang-format on
+// clang-format on
 
     using ReferenceGemmInstance = ck::tensor_operation::host::ReferenceGemm<ADataType,
                                                                             BDataType,

@@ -637,6 +637,10 @@ struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2<ALayout,
         return IsSupportedArgument(*dynamic_cast<const Argument*>(p_arg));
     }
 
+    index_t GetKPerBlock() override { return KPerBlock; }
+
+    bool GetPermuteB() override { return PermuteB; }
+
     static auto MakeArgument(const ADataType* p_a,
                              const BDataType* p_b,
                              CDataType* p_c,
