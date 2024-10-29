@@ -51,10 +51,11 @@ __host__ __device__ inline half2_t pki4_to_half2(pk_i4_t q)
     return amd_assembly_pk_add_f16(bit_cast<half2_t>(lo), bit_cast<half2_t>(SUB));
 }
 
-__host__ __device__ inline bhalf4_t pki4_to_bhalf4(pk_i4x2_t i4s)
+__host__ __device__ inline bhalf4_t pki4_to_bhalf4(int q)
 {
-    uint32_t q = bit_cast<uint16_t>(i4s);
-    uint32_t i8s = (q & 0xf) | (q & 0xf0 << 4) | (q & 0xf00 << 8) | (q & 0xf000 << 12);
+    uint32_t i8s = (q & 0xf) | ((q & 0xf0) << 4) | ((q & 0xf00) << 8) | ((q & 0xf000) << 12);
+    //uint32_t i8s = q & 0xf0f0f0f;
+
     static constexpr uint32_t fp32_base = 0x4B000000;
 
     float                     fp32_intermediates[4];
@@ -72,8 +73,8 @@ __host__ __device__ inline bhalf4_t pki4_to_bhalf4(pk_i4x2_t i4s)
     fp32_intermediates[3] -= 8388616.f;
 
     vector_type<bhalf_t, 4> res;
-    res.template AsType<bhalf2_t>()(Number<0>{}) = __byte_perm(fp32_intermediates_casted[0], fp32_intermediates_casted[1], 0x7632);
-    res.template AsType<bhalf2_t>()(Number<1>{}) = __byte_perm(fp32_intermediates_casted[1], fp32_intermediates_casted[2], 0x7632);
+    res.template AsType<bhalf2_t>()(Number<1>{}) = bit_cast<bhalf2_t>(__byte_perm(fp32_intermediates_casted[0], fp32_intermediates_casted[1], 0x7632));
+    res.template AsType<bhalf2_t>()(Number<0>{}) = bit_cast<bhalf2_t>(__byte_perm(fp32_intermediates_casted[2], fp32_intermediates_casted[3], 0x7632));
 
     return res.template AsType<bhalf4_t>()[Number<0>{}];
 }
@@ -133,8 +134,9 @@ struct PassThroughPack8
 #if 1
         vector_type<bhalf_t, 8> result;
 
-        result.template AsType<bhalf4_t>()(Number<0>{}) = pki4_to_bhalf4(bit_cast<int>(x));
-        result.template AsType<bhalf4_t>()(Number<1>{}) = pki4_to_bhalf4(bit_cast<int>(x) >> 16);
+        result.template AsType<bhalf4_t>()(Number<0>{}) = pki4_to_bhalf4(bit_cast<int>(x) >> 16);
+        result.template AsType<bhalf4_t>()(Number<1>{}) = pki4_to_bhalf4(bit_cast<int>(x));
+
 
         y = result.template AsType<bhalf8_t>()[Number<0>{}];
 #else

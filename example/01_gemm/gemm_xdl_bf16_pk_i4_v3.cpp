@@ -65,7 +65,7 @@ using DeviceGemmV2Instance =
         2, 32, 32, 0,
         1, 1, S<1, 16, 1, 8>, 4,
 #endif
-        ck::BlockGemmPipelineScheduler::Interwave, ck::BlockGemmPipelineVersion::v1, CDataType, CDataType, false, PermuteB>;
+        ck::BlockGemmPipelineScheduler::Interwave, ck::BlockGemmPipelineVersion::v2, CDataType, CDataType, false, PermuteB>;
 
 // clang-format on
 
@@ -146,7 +146,7 @@ bool run_gemm(const ProblemType& problem_size, const ExecutionConfig& config)
         b_k_n.GenerateTensorValue(GeneratorTensor_1<BDataType>{1});
         break;
     default:
-        a_m_k.GenerateTensorValue(GeneratorTensor_3<ADataType>{0.0, 1.0});
+        a_m_k.GenerateTensorValue(GeneratorTensor_3<ADataType>{0, 1.0});
         b_k_n.GenerateTensorValue(GeneratorTensor_2<BDataType>{-2, 2});
     }
 
