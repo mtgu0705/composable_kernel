@@ -65,7 +65,7 @@ using DeviceGemmV2Instance =
         2, 32, 32, 0,
         1, 1, S<1, 16, 1, 8>, 4,
 #endif
-        ck::BlockGemmPipelineScheduler::Interwave, ck::BlockGemmPipelineVersion::v2, CDataType, CDataType, false, PermuteB>;
+        ck::BlockGemmPipelineScheduler::Interwave, ck::BlockGemmPipelineVersion::v2, ADataType, ADataType, false, PermuteB>;
 
 // clang-format on
 

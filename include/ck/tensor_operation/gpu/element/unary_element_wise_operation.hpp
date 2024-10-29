@@ -73,10 +73,10 @@ __host__ __device__ inline bhalf4_t pki4_to_bhalf4(int q)
     fp32_intermediates[3] -= 8388616.f;
 
     vector_type<bhalf_t, 4> res;
-    res.template AsType<bhalf2_t>()(Number<1>{}) = bit_cast<bhalf2_t>(
-        __byte_perm(fp32_intermediates_casted[0], fp32_intermediates_casted[1], 0x7632));
     res.template AsType<bhalf2_t>()(Number<0>{}) = bit_cast<bhalf2_t>(
-        __byte_perm(fp32_intermediates_casted[2], fp32_intermediates_casted[3], 0x7632));
+        __byte_perm(fp32_intermediates_casted[1], fp32_intermediates_casted[0], 0x7632));
+    res.template AsType<bhalf2_t>()(Number<1>{}) = bit_cast<bhalf2_t>(
+        __byte_perm(fp32_intermediates_casted[3], fp32_intermediates_casted[2], 0x7632));
 
     return res.template AsType<bhalf4_t>()[Number<0>{}];
 }
@@ -135,8 +135,8 @@ struct PassThroughPack8
 #if 1
         vector_type<bhalf_t, 8> result;
 
-        result.template AsType<bhalf4_t>()(Number<0>{}) = pki4_to_bhalf4(bit_cast<int>(x) >> 16);
-        result.template AsType<bhalf4_t>()(Number<1>{}) = pki4_to_bhalf4(bit_cast<int>(x));
+        result.template AsType<bhalf4_t>()(Number<0>{}) = pki4_to_bhalf4(bit_cast<int>(x));
+        result.template AsType<bhalf4_t>()(Number<1>{}) = pki4_to_bhalf4(bit_cast<int>(x) >> 16);
 
         y = result.template AsType<bhalf8_t>()[Number<0>{}];
 #else
