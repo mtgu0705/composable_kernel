@@ -11,7 +11,7 @@
 
 namespace ck {
 
-//https://github.com/NVIDIA/FasterTransformer/blob/main/src/fastertransformer/cutlass_extensions/include/cutlass_extensions/interleaved_numeric_conversion.h
+// https://github.com/NVIDIA/FasterTransformer/blob/main/src/fastertransformer/cutlass_extensions/include/cutlass_extensions/interleaved_numeric_conversion.h
 __host__ __device__ inline half4_t pki4_to_half4(int q)
 {
     const int LO = 0x000f000f;
@@ -54,18 +54,18 @@ __host__ __device__ inline half2_t pki4_to_half2(pk_i4_t q)
 __host__ __device__ inline bhalf4_t pki4_to_bhalf4(int q)
 {
     uint32_t i8s = (q & 0xf) | ((q & 0xf0) << 4) | ((q & 0xf00) << 8) | ((q & 0xf000) << 12);
-    //uint32_t i8s = q & 0xf0f0f0f;
+    // uint32_t i8s = q & 0xf0f0f0f;
 
     static constexpr uint32_t fp32_base = 0x4B000000;
 
-    float                     fp32_intermediates[4];
+    float fp32_intermediates[4];
 
     uint32_t* fp32_intermediates_casted = reinterpret_cast<uint32_t*>(fp32_intermediates);
 
-    fp32_intermediates_casted[0]        = __byte_perm(i8s, fp32_base, 0x7650);
-    fp32_intermediates_casted[1]        = __byte_perm(i8s, fp32_base, 0x7651);
-    fp32_intermediates_casted[2]        = __byte_perm(i8s, fp32_base, 0x7652);
-    fp32_intermediates_casted[3]        = __byte_perm(i8s, fp32_base, 0x7653);
+    fp32_intermediates_casted[0] = __byte_perm(i8s, fp32_base, 0x7650);
+    fp32_intermediates_casted[1] = __byte_perm(i8s, fp32_base, 0x7651);
+    fp32_intermediates_casted[2] = __byte_perm(i8s, fp32_base, 0x7652);
+    fp32_intermediates_casted[3] = __byte_perm(i8s, fp32_base, 0x7653);
 
     fp32_intermediates[0] -= 8388616.f;
     fp32_intermediates[1] -= 8388616.f;
@@ -73,8 +73,10 @@ __host__ __device__ inline bhalf4_t pki4_to_bhalf4(int q)
     fp32_intermediates[3] -= 8388616.f;
 
     vector_type<bhalf_t, 4> res;
-    res.template AsType<bhalf2_t>()(Number<1>{}) = bit_cast<bhalf2_t>(__byte_perm(fp32_intermediates_casted[0], fp32_intermediates_casted[1], 0x7632));
-    res.template AsType<bhalf2_t>()(Number<0>{}) = bit_cast<bhalf2_t>(__byte_perm(fp32_intermediates_casted[2], fp32_intermediates_casted[3], 0x7632));
+    res.template AsType<bhalf2_t>()(Number<1>{}) = bit_cast<bhalf2_t>(
+        __byte_perm(fp32_intermediates_casted[0], fp32_intermediates_casted[1], 0x7632));
+    res.template AsType<bhalf2_t>()(Number<0>{}) = bit_cast<bhalf2_t>(
+        __byte_perm(fp32_intermediates_casted[2], fp32_intermediates_casted[3], 0x7632));
 
     return res.template AsType<bhalf4_t>()[Number<0>{}];
 }
@@ -93,7 +95,6 @@ __host__ __device__ inline bhalf2_t pki4_to_bhalf2(pk_i4_t q)
 
     return res.template AsType<bhalf2_t>()[Number<0>{}];
 }
-
 
 namespace tensor_operation {
 namespace element_wise {
@@ -125,7 +126,7 @@ struct PassThroughPack8
         dst.template AsType<half2_t>()(Number<3>{}) =
             pki4_to_half2(src.template AsType<pk_i4_t>()[Number<3>{}]);
 
-        y          = dst.template AsType<half8_t>()[Number<0>{}];
+        y = dst.template AsType<half8_t>()[Number<0>{}];
 #endif
     }
 
@@ -136,7 +137,6 @@ struct PassThroughPack8
 
         result.template AsType<bhalf4_t>()(Number<0>{}) = pki4_to_bhalf4(bit_cast<int>(x) >> 16);
         result.template AsType<bhalf4_t>()(Number<1>{}) = pki4_to_bhalf4(bit_cast<int>(x));
-
 
         y = result.template AsType<bhalf8_t>()[Number<0>{}];
 #else

@@ -838,7 +838,8 @@ struct DeviceOperationInstanceFactory<
             if constexpr(is_same_v<ALayout, Row> && is_same_v<BLayout, Col> &&
                          is_same_v<CLayout, Row>)
             {
-                add_device_gemm_xdl_universal_bf16_i4_bf16_mk_nk_mn_mem_v2_default_instances(op_ptrs);
+                add_device_gemm_xdl_universal_bf16_i4_bf16_mk_nk_mn_mem_v2_default_instances(
+                    op_ptrs);
             }
         }
 
