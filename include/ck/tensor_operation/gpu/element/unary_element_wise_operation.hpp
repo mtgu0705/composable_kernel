@@ -54,7 +54,6 @@ __host__ __device__ inline half2_t pki4_to_half2(pk_i4_t q)
 __host__ __device__ inline bhalf4_t pki4_to_bhalf4(int q)
 {
     uint32_t i8s = (q & 0xf) | ((q & 0xf0) << 4) | ((q & 0xf00) << 8) | ((q & 0xf000) << 12);
-    // uint32_t i8s = q & 0xf0f0f0f;
 
     static constexpr uint32_t fp32_base = 0x4B000000;
 
