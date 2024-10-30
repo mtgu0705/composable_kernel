@@ -210,7 +210,7 @@ bool run_batched_gemm_example(int argc, char* argv[])
 
     problem_size.M = 256 * (dis(gen) + 1);
     problem_size.N = 128 * (dis(gen) + 1);
-    problem_size.K = 64 * (dis(gen) + 2);
+    problem_size.K = 128 * (dis(gen) + 2);
 
     problem_size.stride_A = problem_size.K;
     problem_size.stride_B = problem_size.K;
@@ -220,7 +220,7 @@ bool run_batched_gemm_example(int argc, char* argv[])
     problem_size.batch_stride_B = problem_size.K * problem_size.N;
     problem_size.batch_stride_C = problem_size.M * problem_size.N;
 
-    problem_size.batch_count = 16;
+    problem_size.batch_count = 2;
 
     if(argc == 4)
     {
