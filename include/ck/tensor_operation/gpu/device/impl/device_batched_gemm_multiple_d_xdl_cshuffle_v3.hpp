@@ -171,17 +171,17 @@ template <typename ALayout,
           typename LDSTypeA                           = ComputeTypeA,
           typename LDSTypeB                           = ComputeTypeB>
 struct DeviceBatchedGemmMultiD_Xdl_CShuffle_V3
-    : public DeviceBatchedGemmMultiD<ALayout,
-                                     BLayout,
-                                     DsLayout,
-                                     CLayout,
-                                     ADataType,
-                                     BDataType,
-                                     DsDataType,
-                                     CDataType,
-                                     AElementwiseOperation,
-                                     BElementwiseOperation,
-                                     CElementwiseOperation>
+    : public DeviceBatchedGemmV2MultiD<ALayout,
+                                       BLayout,
+                                       DsLayout,
+                                       CLayout,
+                                       ADataType,
+                                       BDataType,
+                                       DsDataType,
+                                       CDataType,
+                                       AElementwiseOperation,
+                                       BElementwiseOperation,
+                                       CElementwiseOperation>
 {
     static constexpr index_t NumDTensor = DsDataType::Size();
 
