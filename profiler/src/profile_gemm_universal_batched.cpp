@@ -28,7 +28,7 @@ enum struct GemmDataType
 #define OP_NAME "gemm_universal_batched"
 #define OP_DESC "Batched GEMM Universal"
 
-int profile_batched_gemm(int argc, char* argv[])
+int profile_batched_gemm_universal(int argc, char* argv[])
 {
     if(argc != 18 && argc != 21)
     {
@@ -174,4 +174,4 @@ int profile_batched_gemm(int argc, char* argv[])
     }
 }
 
-REGISTER_PROFILER_OPERATION(OP_NAME, OP_DESC, profile_batched_gemm);
+REGISTER_PROFILER_OPERATION(OP_NAME, OP_DESC, profile_batched_gemm_universal);
