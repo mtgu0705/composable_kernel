@@ -79,9 +79,15 @@ bool run_batched_gemm(const ProblemSize& problem_size, const ExecutionConfig& co
         f_host_tensor_descriptor(batch_count, M, N, stride_C, batch_stride_C, ELayout{}));
 #endif
 
-    std::cout << "a_g_m_k: " << a_g_m_k.mDesc << std::endl;
-    std::cout << "b_g_k_n: " << b_g_k_n.mDesc << std::endl;
-    std::cout << "e_g_m_n: " << e_g_m_n_device_result.mDesc << std::endl;
+    std::cout << "a_g_m_k: " << a_g_m_k.mDesc << ", size = "
+              << sizeof(ADataType) * a_g_m_k.mDesc.GetElementSpaceSize() / 1024 / 1024 << " MB"
+              << std::endl;
+    std::cout << "b_g_k_n: " << b_g_k_n.mDesc << ", size = "
+              << sizeof(BDataType) * b_g_k_n.mDesc.GetElementSpaceSize() / 1024 / 1024 << " MB"
+              << std::endl;
+    std::cout << "e_g_m_n: " << e_g_m_n_device_result.mDesc << ", size = "
+              << sizeof(EDataType) * e_g_m_n_device_result.mDesc.GetElementSpaceSize() / 1024 / 1024
+              << " MB" << std::endl;
 
     switch(config.init_method)
     {
@@ -212,14 +218,6 @@ bool run_batched_gemm_example(int argc, char* argv[])
     problem_size.N = 128 * (dis(gen) + 1);
     problem_size.K = 128 * (dis(gen) + 2);
 
-    problem_size.stride_A = problem_size.K;
-    problem_size.stride_B = problem_size.K;
-    problem_size.stride_C = problem_size.N;
-
-    problem_size.batch_stride_A = problem_size.M * problem_size.K;
-    problem_size.batch_stride_B = problem_size.K * problem_size.N;
-    problem_size.batch_stride_C = problem_size.M * problem_size.N;
-
     problem_size.batch_count = 2;
 
     if(argc == 4)
@@ -228,13 +226,37 @@ bool run_batched_gemm_example(int argc, char* argv[])
         config.init_method     = std::stoi(argv[2]);
         config.time_kernel     = std::stoi(argv[3]);
     }
+    else if(argc == 8)
+    {
+        config.do_verification   = std::stoi(argv[1]);
+        config.init_method       = std::stoi(argv[2]);
+        config.time_kernel       = std::stoi(argv[3]);
+        problem_size.M           = std::stoi(argv[4]);
+        problem_size.N           = std::stoi(argv[5]);
+        problem_size.K           = std::stoi(argv[6]);
+        problem_size.batch_count = std::stoi(argv[7]);
+    }
     else
     {
         printf("arg1: verification (0=no, 1=yes)\n");
         printf("arg2: initialization (0=no init, 1=integer value, 2=decimal value)\n");
         printf("arg3: time kernel (0=n0, 1=yes)\n");
+        printf("optinal\n");
+        printf("arg4-7: M = %d N = %d K = %d Batch = %d\n",
+               problem_size.M,
+               problem_size.N,
+               problem_size.K,
+               problem_size.batch_count);
         exit(0);
     }
+
+    problem_size.stride_A = problem_size.K;
+    problem_size.stride_B = problem_size.K;
+    problem_size.stride_C = problem_size.N;
+
+    problem_size.batch_stride_A = problem_size.M * problem_size.K;
+    problem_size.batch_stride_B = problem_size.K * problem_size.N;
+    problem_size.batch_stride_C = problem_size.M * problem_size.N;
 
     return run_batched_gemm(problem_size, config);
 }

@@ -49,12 +49,9 @@ __global__ void
 
     const index_t g_idx = blockIdx.z;
 
-    const long_index_t a_batch_offset = __builtin_amdgcn_readfirstlane(
-        static_cast<long_index_t>(karg.compute_ptr_offset_of_batch.GetAPtrOffset(g_idx)));
-    const long_index_t b_batch_offset = __builtin_amdgcn_readfirstlane(
-        static_cast<long_index_t>(karg.compute_ptr_offset_of_batch.GetBPtrOffset(g_idx)));
-    const long_index_t c_batch_offset = __builtin_amdgcn_readfirstlane(
-        static_cast<long_index_t>(karg.compute_ptr_offset_of_batch.GetCPtrOffset(g_idx)));
+    const auto a_batch_offset = karg.compute_ptr_offset_of_batch.GetAPtrOffset(g_idx);
+    const auto b_batch_offset = karg.compute_ptr_offset_of_batch.GetBPtrOffset(g_idx);
+    const auto c_batch_offset = karg.compute_ptr_offset_of_batch.GetCPtrOffset(g_idx);
 
     GridwiseGemm::template Run<HasMainKBlockLoop, CGlobalMemoryDataOperation, TailNum>(
         karg.p_a_grid + a_batch_offset,
@@ -96,12 +93,9 @@ __global__ void
     //__builtin_amdgcn_readfirstlane(get_grid_size() / karg.Batch);
     const index_t g_idx = blockIdx.z;
 
-    const long_index_t a_batch_offset = __builtin_amdgcn_readfirstlane(
-        static_cast<long_index_t>(karg.compute_ptr_offset_of_batch.GetAPtrOffset(g_idx)));
-    const long_index_t b_batch_offset = __builtin_amdgcn_readfirstlane(
-        static_cast<long_index_t>(karg.compute_ptr_offset_of_batch.GetBPtrOffset(g_idx)));
-    const long_index_t c_batch_offset = __builtin_amdgcn_readfirstlane(
-        static_cast<long_index_t>(karg.compute_ptr_offset_of_batch.GetCPtrOffset(g_idx)));
+    const auto a_batch_offset = karg.compute_ptr_offset_of_batch.GetAPtrOffset(g_idx);
+    const auto b_batch_offset = karg.compute_ptr_offset_of_batch.GetBPtrOffset(g_idx);
+    const auto c_batch_offset = karg.compute_ptr_offset_of_batch.GetCPtrOffset(g_idx);
 
     GridwiseGemm::template Run_2Lds<HasMainKBlockLoop, CGlobalMemoryDataOperation, TailNum>(
         karg.p_a_grid + a_batch_offset,
@@ -249,17 +243,17 @@ struct DeviceBatchedGemmMultiD_Xdl_CShuffle_V3
 
         __host__ __device__ constexpr long_index_t GetAPtrOffset(index_t g_idx) const
         {
-            return g_idx * static_cast<long_index_t>(BatchStrideA_);
+            return static_cast<long_index_t>(BatchStrideA_) * g_idx;
         }
 
         __host__ __device__ constexpr long_index_t GetBPtrOffset(index_t g_idx) const
         {
-            return g_idx * static_cast<long_index_t>(BatchStrideB_);
+            return static_cast<long_index_t>(BatchStrideB_) * g_idx;
         }
 
         __host__ __device__ constexpr long_index_t GetCPtrOffset(index_t g_idx) const
         {
-            return g_idx * static_cast<long_index_t>(BatchStrideC_);
+            return static_cast<long_index_t>(BatchStrideC_) * g_idx;
         }
 
         private:
@@ -326,7 +320,7 @@ struct DeviceBatchedGemmMultiD_Xdl_CShuffle_V3
                 arg.Print();
             }
 
-            if(!GridwiseGemm::CheckValidity(arg))
+            if(!GridwiseGemm::CheckValidity(arg) || arg.KBatch > 1)
             {
                 throw std::runtime_error("wrong! GridwiseGemm has invalid setting");
             }
@@ -355,9 +349,9 @@ struct DeviceBatchedGemmMultiD_Xdl_CShuffle_V3
                         arg_.K, arg_.KPadded, arg_.N, arg_.NPadded, arg_.StrideB, arg_.BK0);
 
                     auto size_a_buffer =
-                        a_grid_desc_ak0_m_ak1.GetElementSpaceSize() * sizeof(ADataType);
+                        a_grid_desc_ak0_m_ak1.GetElementSpaceSize() * sizeof(ADataType) * arg.Batch;
                     auto size_b_buffer =
-                        b_grid_desc_bk0_n_bk1.GetElementSpaceSize() * sizeof(BDataType);
+                        b_grid_desc_bk0_n_bk1.GetElementSpaceSize() * sizeof(BDataType) * arg.Batch;
 
                     const auto ds_grid_desc_m_n = GridwiseGemm::MakeDsGridDescriptor_M_N(
                         arg_.M, arg_.MPadded, arg_.N, arg_.NPadded, arg_.StrideDs);

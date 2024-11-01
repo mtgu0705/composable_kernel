@@ -30,7 +30,7 @@ enum struct GemmDataType
 
 int profile_batched_gemm(int argc, char* argv[])
 {
-    if(argc != 18)
+    if(argc != 18 && argc != 21)
     {
         // clang-format off
         printf("arg1: tensor operation (" OP_NAME ": " OP_DESC ")\n");
@@ -44,8 +44,22 @@ int profile_batched_gemm(int argc, char* argv[])
         printf("arg6: print tensor value (0: no; 1: yes)\n");
         printf("arg7: time kernel (0=n0, 1=yes)\n");
         printf("arg8 to 17: M, N, K, StrideA, StrideB, StrideC, BatchStrideA, BatchStrideB, BatchStrideC, BatchCount\n");
+        printf("optional:\n");
+        printf("arg18: number of warm-up cycles (default 1)\n");
+        printf("arg19: number of iterations (default 10)\n");
+        printf("arg20: memory for rotating buffer (default 0, size in MB)\n");
         // clang-format on
         exit(1);
+    }
+
+    int n_warmup      = 1;
+    int n_iter        = 10;
+    uint64_t rotating = 0;
+    if(argc == 21)
+    {
+        n_warmup = std::stoi(argv[18]);
+        n_iter   = std::stoi(argv[19]);
+        rotating = std::stoull(argv[20]) * 1024 * 1024;
     }
 
     const auto data_type       = static_cast<GemmDataType>(std::stoi(argv[2]));
@@ -140,7 +154,10 @@ int profile_batched_gemm(int argc, char* argv[])
                                                                                     StrideA_,
                                                                                     StrideB_,
                                                                                     StrideC_,
-                                                                                    BatchCount);
+                                                                                    BatchCount,
+                                                                                    n_warmup,
+                                                                                    n_iter,
+                                                                                    rotating);
 
             return pass ? 0 : 1;
         };

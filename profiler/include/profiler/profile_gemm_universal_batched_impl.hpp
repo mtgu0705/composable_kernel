@@ -47,7 +47,10 @@ bool profile_gemm_universal_batched_impl(int do_verification,
                                          int StrideA,
                                          int StrideB,
                                          int StrideC,
-                                         int BatchCount)
+                                         int BatchCount,
+                                         int n_warmup,
+                                         int n_iter,
+                                         uint64_t rotating = 0)
 {
     bool pass = true;
 
@@ -78,9 +81,17 @@ bool profile_gemm_universal_batched_impl(int do_verification,
     Tensor<CDataType> c_g_m_n_device_result(
         f_host_tensor_descriptor(BatchCount, M, N, StrideC, BatchStrideC, CLayout{}));
 
+    int total_gemm_needed =
+        a_g_m_k.GetElementSpaceSizeInBytes() + b_g_k_n.GetElementSpaceSizeInBytes();
+    int rotating_count = std::max(
+        1,
+        std::min(n_iter,
+                 static_cast<int>(std::ceil(static_cast<double>(rotating) / total_gemm_needed))));
+
     std::cout << "a_g_m_k: " << a_g_m_k.mDesc << std::endl;
     std::cout << "b_g_k_n: " << b_g_k_n.mDesc << std::endl;
     std::cout << "c_g_m_n: " << c_g_m_n_host_result.mDesc << std::endl;
+    std::cout << "rotating count: " << rotating_count << std::endl;
 
     switch(init_method)
     {
@@ -173,8 +184,9 @@ bool profile_gemm_universal_batched_impl(int do_verification,
 
             std::string op_name = op_ptr->GetTypeString();
 
-            float ave_time =
-                invoker_ptr->Run(argument_ptr.get(), StreamConfig{nullptr, time_kernel});
+            float ave_time = invoker_ptr->Run(
+                argument_ptr.get(),
+                StreamConfig{nullptr, time_kernel, 0, n_warmup, n_iter, true, rotating_count});
 
             std::size_t flop = std::size_t(2) * BatchCount * M * N * K;
 
@@ -221,8 +233,45 @@ bool profile_gemm_universal_batched_impl(int do_verification,
         }
     }
 
-    std::cout << "Best Perf: " << best_ave_time << " ms, " << best_tflops << " TFlops, "
-              << best_gb_per_sec << " GB/s, " << best_op_name << std::endl;
+    if constexpr(is_same<CDataType, float>::value)
+    {
+        std::cout << "Best Perf for datatype = f32";
+    }
+    else if constexpr(is_same<CDataType, half_t>::value)
+    {
+        std::cout << "Best Perf for datatype = f16";
+    }
+    else if constexpr(is_same<CDataType, bhalf_t>::value)
+    {
+        std::cout << "Best Perf for datatype = bf16";
+    }
+    else if constexpr(is_same<CDataType, int8_t>::value)
+    {
+        std::cout << "Best Perf for datatype = int8";
+    }
+
+    if constexpr(is_same<ALayout, tensor_layout::gemm::RowMajor>::value)
+    {
+        std::cout << " ALayout =  RowMajor";
+    }
+    else if constexpr(is_same<ALayout, tensor_layout::gemm::ColumnMajor>::value)
+    {
+        std::cout << " ALayout =  ColumnMajor";
+    }
+
+    if constexpr(is_same<BLayout, tensor_layout::gemm::RowMajor>::value)
+    {
+        std::cout << " BLayout =  RowMajor";
+    }
+    else if constexpr(is_same<BLayout, tensor_layout::gemm::ColumnMajor>::value)
+    {
+        std::cout << " BLayout =  ColumnMajor";
+    }
+
+    std::cout << " B = " << BatchCount << " M = " << M << " N = " << N << " K = " << K
+              << " StrideA = " << StrideA << " StrideB = " << StrideB << " StrideC = " << StrideC
+              << ": " << best_ave_time << " ms, " << best_tflops << " TFlops, " << best_gb_per_sec
+              << " GB/s, " << best_op_name << std::endl;
 
     return pass;
 }
