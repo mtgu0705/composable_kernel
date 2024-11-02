@@ -79,6 +79,33 @@ struct PassThroughPack8
     __host__ __device__ constexpr void operator()(ck::half8_t& y, const ck::pk_i4x4_t& x) const
     {
 #if 1
+        int x_permute = 0;
+        int bits4_0 = (bit_cast<int>(x) >> 0) & 0xF; 
+        int bits4_1 = (bit_cast<int>(x) >> 4) & 0xF;
+        int bits4_2 = (bit_cast<int>(x) >> 8) & 0xF;
+        int bits4_3 = (bit_cast<int>(x) >> 12) & 0xF;
+        int bits4_4 = (bit_cast<int>(x) >> 16) & 0xF;
+        int bits4_5 = (bit_cast<int>(x) >> 20) & 0xF;
+        int bits4_6 = (bit_cast<int>(x) >> 24) & 0xF;
+        int bits4_7 = (bit_cast<int>(x) >> 28) & 0xF;
+
+        x_permute |= (bits4_1 << 0);
+        x_permute |= (bits4_3 << 4);
+        x_permute |= (bits4_5 << 8);
+        x_permute |= (bits4_7 << 12);
+        x_permute |= (bits4_0 << 16);
+        x_permute |= (bits4_2 << 20);
+        x_permute |= (bits4_4 << 24);
+        x_permute |= (bits4_6 << 28);
+
+        vector_type<half_t, 8> result;
+
+        result.template AsType<half4_t>()(Number<0>{}) = pki4_to_half4(x_permute);
+        result.template AsType<half4_t>()(Number<1>{}) = pki4_to_half4(x_permute >> 8);
+
+        y = result.template AsType<half8_t>()[Number<0>{}];
+
+#elif 1
         vector_type<half_t, 8> result;
 
         result.template AsType<half4_t>()(Number<0>{}) = pki4_to_half4(bit_cast<int>(x));
