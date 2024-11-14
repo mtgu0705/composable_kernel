@@ -54,7 +54,7 @@ using DeviceGemmV2Instance =
         2, 32, 32, 0,
         1, 1, S<1, 16, 1, 8>, 4,
 #endif
-        ck::BlockGemmPipelineScheduler::Interwave, ck::BlockGemmPipelineVersion::v2, CDataType, CDataType, false, PermuteB>;
+        ck::BlockGemmPipelineScheduler::Interwave, ck::BlockGemmPipelineVersion::v2, ADataType, ADataType, false, PermuteB>;
 
 // clang-format on
 
@@ -147,7 +147,7 @@ bool run_gemm(const ProblemType& problem_size, const ExecutionConfig& config)
     std::cout << "c_m_n: " << c_m_n_host_result.mDesc << std::endl;
 
     DeviceMem a_m_k_device_buf(sizeof(ADataType) * a_m_k.mDesc.GetElementSpaceSize());
-    DeviceMem b_k_n_device_buf(sizeof(BDataType) * b_k_n_permute.mDesc.GetElementSpaceSize());
+    DeviceMem b_k_n_device_buf(sizeof(BDataType) * b_k_n_permute.mDesc.GetElementSpaceSize() / 2);
     DeviceMem c_m_n_device_buf(sizeof(CDataType) * c_m_n_device_result.mDesc.GetElementSpaceSize());
 
     // weight permute
@@ -179,6 +179,7 @@ bool run_gemm(const ProblemType& problem_size, const ExecutionConfig& config)
         }
     }
 
+#if 1
     // vector pk_i4x4 permute
     for(int i = 0; i < N; i++)
     {
@@ -227,6 +228,7 @@ bool run_gemm(const ProblemType& problem_size, const ExecutionConfig& config)
             }
         }
     }
+#endif
 
     a_m_k_device_buf.ToDevice(a_m_k.mData.data());
     b_k_n_device_buf.ToDevice(b_k_n_permute.mData.data());

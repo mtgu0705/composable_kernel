@@ -39,14 +39,12 @@ __host__ __device__ inline half4_t pki4_to_half4(int q)
 __host__ __device__ inline half2_t pki4_to_half2(pk_i4_t q)
 {
     uint8_t x_u8 = ck::bit_cast<uint8_t>(q);
-
-    int x_l = (x_u8 & 0x0f);
-    int x_h = (x_u8 & 0xf0) << 12;
+    uint32_t i4s = ((x_u8 & 0x0f) << 16) | ((x_u8 & 0xf0) >> 4);
 
     const int EX  = 0x64006400;
     const int SUB = 0xE408E408; //-8
 
-    int lo = (x_l | x_h) | EX;
+    int lo = i4s | EX;
 
     return amd_assembly_pk_add_f16(bit_cast<half2_t>(lo), bit_cast<half2_t>(SUB));
 }
@@ -84,8 +82,8 @@ __host__ __device__ inline bhalf2_t pki4_to_bhalf2(pk_i4_t q)
 {
     uint8_t x_u8 = ck::bit_cast<uint8_t>(q);
 
-    float x_h = ((x_u8 & 0x0f) >> 0) - 8;
-    float x_l = ((x_u8 & 0xf0) >> 4) - 8;
+    float x_h = ((x_u8 & 0x0f) >> 0) - 8.f;
+    float x_l = ((x_u8 & 0xf0) >> 4) - 8.f;
 
     vector_type<bhalf_t, 2> res;
 
