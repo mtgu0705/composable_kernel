@@ -13,9 +13,9 @@ namespace tensor_operation {
 namespace device {
 namespace instance {
 
-using I4  = pk_i4_t;
+using I4   = pk_i4_t;
 using BF16 = bhalf_t;
-using F32 = float;
+using F32  = float;
 
 using Row = tensor_layout::gemm::RowMajor;
 using Col = tensor_layout::gemm::ColumnMajor;

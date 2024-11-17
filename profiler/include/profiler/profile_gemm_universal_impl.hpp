@@ -69,8 +69,9 @@ bool profile_gemm_universal_impl(int do_verification,
     Tensor<CDataType> c_m_n_host_result(f_host_tensor_descriptor(M, N, StrideC, CLayout{}));
     Tensor<CDataType> c_m_n_device_result(f_host_tensor_descriptor(M, N, StrideC, CLayout{}));
 
-    std::size_t total_gemm_needed = a_m_k.GetElementSpaceSizeInBytes() + b_k_n.GetElementSpaceSizeInBytes();
-    int rotating_count    = std::max(
+    std::size_t total_gemm_needed =
+        a_m_k.GetElementSpaceSizeInBytes() + b_k_n.GetElementSpaceSizeInBytes();
+    int rotating_count = std::max(
         1,
         std::min(n_iter,
                  static_cast<int>(std::ceil(static_cast<double>(rotating) / total_gemm_needed))));
