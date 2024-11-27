@@ -151,6 +151,27 @@ bool profile_gemm_b_scale_impl(int do_verification,
     // Run reference GEMM
     if(do_verification)
     {
+        Tensor<float> b_k_n_dequant({K, N});
+
+        float v_b = 0;
+        for(int n = 0; n < N; n++)
+        {
+            for(int k = 0; k < K; k++)
+            {
+                ck::pk_i4_t i4x2 = b_k_n(k, n);
+                int8_t i4        = 0;
+                if(k % 2 == 1)
+                    i4 = (i4x2 >> 0) & 0xf;
+                else
+                    i4 = (i4x2 >> 4) & 0xf;
+                i4  = i4 - 8;
+                v_b = ck::type_convert<float>(i4);
+
+                b_k_n_dequant(k, n) =
+                    ck::type_convert<float>(v_b) *
+                    ck::type_convert<float>(b1_k_n(k / ScaleBlockK, n));
+            }
+        }
         using ReferenceGemmInstance = ck::tensor_operation::host::ReferenceGemm<ADataType,
                                                                                 BDataType,
                                                                                 CDataType,
@@ -164,7 +185,7 @@ bool profile_gemm_b_scale_impl(int do_verification,
         auto ref_invoker = ref_gemm.MakeInvoker();
 
         auto ref_argument = ref_gemm.MakeArgument(
-            a_m_k, b_k_n, c_m_n_host_result, a_element_op, b_element_op, c_element_op);
+            a_m_k, b_k_n_dequant, c_m_n_host_result, a_element_op, b_element_op, c_element_op);
 
         ref_invoker.Run(ref_argument);
     }
