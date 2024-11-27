@@ -77,12 +77,21 @@ __global__ void
     __shared__ char p_shared_0[GridwiseGemm::GetSharedMemoryNumberOfByte()];
     __shared__ char p_shared_1[GridwiseGemm::GetSharedMemoryNumberOfByte()];
 
-    auto splitk_batch_offset = typename GridwiseGemm::SplitKBatchOffset(karg);
+    // auto splitk_batch_offset = typename GridwiseGemm::SplitKBatchOffset(karg);
+
+    // GridwiseGemm::template Run_2Lds<HasMainKBlockLoop, CGlobalMemoryDataOperation, TailNum>(
+    //     karg.p_a_grid + splitk_batch_offset.a_k_split_offset,
+    //     karg.p_b_grid + splitk_batch_offset.b_k_split_offset,
+    //     karg.p_c_grid + splitk_batch_offset.c_reduce_offset,
+    //     p_shared_0,
+    //     p_shared_1,
+    //     karg);
 
     GridwiseGemm::template Run_2Lds<HasMainKBlockLoop, CGlobalMemoryDataOperation, TailNum>(
-        karg.p_a_grid + splitk_batch_offset.a_k_split_offset,
-        karg.p_b_grid + splitk_batch_offset.b_k_split_offset,
-        karg.p_c_grid + splitk_batch_offset.c_reduce_offset,
+        karg.p_a_grid,
+        karg.p_b_grid,
+        karg.p_c_grid,
+        karg.p_b_scale_grid,
         p_shared_0,
         p_shared_1,
         karg);
@@ -1722,6 +1731,7 @@ struct GridwiseGemm_xdl_cshuffle_v3
     __device__ static void Run_2Lds(const ADataType* p_a_grid,
                                     const BDataType* p_b_grid,
                                     CDataType* p_c_grid,
+                                    const BScaleType* p_b_scale_grid,
                                     void* p_shared_0,
                                     void* p_shared_1,
                                     const Problem& problem,
@@ -1736,6 +1746,15 @@ struct GridwiseGemm_xdl_cshuffle_v3
             p_b_grid, b_grid_desc_bk0_n_bk1.GetElementSpaceSize());
         auto c_grid_buf = make_dynamic_buffer<AddressSpaceEnum::Global>(
             p_c_grid, c_grid_desc_mblock_mperblock_nblock_nperblock.GetElementSpaceSize());
+
+        // B Scale grid and buffer
+        const auto b_scale_grid_desc_bn_ak = make_naive_tensor_descriptor(
+            make_tuple(math::integer_divide_ceil(problem.N, ScaleBlockN),
+                       math::integer_divide_ceil(problem.K, ScaleBlockK)),
+            make_tuple(math::integer_divide_ceil(problem.K, ScaleBlockK), 1));
+
+         const auto b_scale_grid_buf = make_dynamic_buffer<AddressSpaceEnum::Global>(
+            p_b_scale_grid, b_scale_grid_desc_bn_ak.GetElementSpaceSize());
 
         const AElementwiseOperation a_element_op{};
         const BElementwiseOperation b_element_op{};
@@ -1845,7 +1864,7 @@ struct GridwiseGemm_xdl_cshuffle_v3
 
         auto b_block_buf_ping = make_dynamic_buffer<AddressSpaceEnum::Lds>(
             bit_cast<BDataType*>(static_cast<char*>(p_shared_0) +
-                                 a_block_space_size_aligned * sizeof(ADataType)),
+                                 a_block_space_size_aligned * sizeof(ADataType)/APackedSize),
             b_block_desc_bk0_n_bk1.GetElementSpaceSize());
 
         auto a_block_buf_pong = make_dynamic_buffer<AddressSpaceEnum::Lds>(
@@ -1853,7 +1872,7 @@ struct GridwiseGemm_xdl_cshuffle_v3
 
         auto b_block_buf_pong = make_dynamic_buffer<AddressSpaceEnum::Lds>(
             bit_cast<BDataType*>(bit_cast<char*>(p_shared_1) +
-                                 a_block_space_size_aligned * sizeof(ADataType)),
+                                 a_block_space_size_aligned * sizeof(ADataType)/APackedSize),
             b_block_desc_bk0_n_bk1.GetElementSpaceSize());
 
         auto a_block_bufs = make_tuple(a_block_buf_ping, a_block_buf_pong);
@@ -1871,6 +1890,37 @@ struct GridwiseGemm_xdl_cshuffle_v3
             (a_grid_desc_ak0_m_ak1.GetLength(I0) * a_grid_desc_ak0_m_ak1.GetLength(I2)) /
             KPerBlock);
 
+        // B scale
+        const index_t ScaleSliceSizeN = NXdlPerWave;
+        const index_t ScaleSliceSizeK = 1;
+
+        constexpr auto b_scale_thread_desc = make_naive_tensor_descriptor_packed(
+            make_tuple(Number<ScaleSliceSizeN>{}, Number<ScaleSliceSizeK>{}));
+
+        constexpr index_t NWaves = NPerBlock / (NXdlPerWave * NPerXdl);
+
+        auto b_thread_offset =
+            get_thread_local_1d_id() % NPerXdl + (get_thread_local_1d_id() / 64) % NWaves * NPerXdl;
+
+        auto b_scale_thread_copy =
+            ThreadwiseTensorSliceTransfer_v2<BScaleType,
+                                             BScaleType,
+                                             decltype(b_scale_grid_desc_bn_ak),
+                                             decltype(b_scale_thread_desc),
+                                             Sequence<1, ScaleSliceSizeK>,
+                                             Sequence<0, 1>,
+                                             1,
+                                             1,
+                                             1,
+                                             false>(
+                b_scale_grid_desc_bn_ak,
+                make_multi_index(block_n_id * NPerBlock / ScaleBlockN + b_thread_offset, 0));
+
+        constexpr auto b_scale_thread_slice_copy_step =
+            make_tuple(make_multi_index(NWaves * NPerXdl, 0), make_multi_index(-NPerBlock, 1));
+
+        const index_t num_k_block_per_scale = ScaleBlockK / KPerBlock;
+
         blockwise_gemm_pipeline.template Run<HasMainKBlockLoop, TailNum>(a_grid_desc_ak0_m_ak1,
                                                                          a_block_desc_ak0_m_ak1,
                                                                          a_blockwise_copy,
@@ -1884,7 +1934,15 @@ struct GridwiseGemm_xdl_cshuffle_v3
                                                                          b_block_bufs,
                                                                          b_block_slice_copy_step,
                                                                          c_thread_buf,
-                                                                         num_k_block_main_loop);
+
+                                                                         b_scale_grid_desc_bn_ak,
+                                                                         b_scale_thread_desc,
+                                                                         b_scale_thread_copy,
+                                                                         b_scale_grid_buf,
+                                                                         b_scale_thread_slice_copy_step,
+
+                                                                         num_k_block_main_loop,
+                                                                         num_k_block_per_scale);
 
         // shuffle C and write out
         {
@@ -2090,6 +2148,7 @@ struct GridwiseGemm_xdl_cshuffle_v3
     __device__ static void Run_2Lds(const ADataType* p_a_grid,
                                     const BDataType* p_b_grid,
                                     CDataType* p_c_grid,
+                                    const BScaleType* p_b_scale_grid,
                                     void* p_shared_0,
                                     void* p_shared_1,
                                     const Problem& problem)
@@ -2113,6 +2172,7 @@ struct GridwiseGemm_xdl_cshuffle_v3
                  TailNum>(p_a_grid,
                           p_b_grid,
                           p_c_grid,
+                          p_b_scale_grid,
                           p_shared_0,
                           p_shared_1,
                           problem,
