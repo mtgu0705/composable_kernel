@@ -328,7 +328,7 @@ struct BlockwiseGemmXdlops_pipeline_v3_b_scale<BlockGemmPipelineScheduler::Intra
             b_scale_thread_copy.Run(b_scale_grid_desc,
                                     b_scale_grid_buf,
                                     b_scale_thread_desc,
-                                    make_tuple(n0, I0),
+                                    make_tuple(n0, I0, I0),
                                     b_scale_thread_buf);
 
             b_scale_thread_copy.MoveSrcSliceWindow(b_scale_grid_desc,
@@ -455,7 +455,7 @@ struct BlockwiseGemmXdlops_pipeline_v3_b_scale<BlockGemmPipelineScheduler::Intra
                     b_scale_thread_copy.Run(b_scale_grid_desc,
                                             b_scale_grid_buf,
                                             b_scale_thread_desc,
-                                            make_tuple(n0, I0),
+                                            make_tuple(n0, I0, I0),
                                             b_scale_thread_buf);
 
                     b_scale_thread_copy.MoveSrcSliceWindow(

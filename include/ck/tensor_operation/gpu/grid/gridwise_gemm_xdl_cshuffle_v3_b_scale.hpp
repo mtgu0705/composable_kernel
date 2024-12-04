@@ -713,7 +713,7 @@ struct GridwiseGemm_xdl_cshuffle_v3
     __device__ static constexpr auto GetABlockDescriptor_AK0PerBlock_MPerBlock_AK1()
     {
         // A matrix in LDS memory, dst of blockwise copy
-        if constexpr(ABlockLdsExtraM)
+        if constexpr(ABlockLdsExtraM || BlkGemmPipelineVer == BlockGemmPipelineVersion::v4)
         {
             return make_naive_tensor_descriptor(
                 make_tuple(AK0Number, Number<MPerBlock>{}, AK1Number),
@@ -849,7 +849,7 @@ struct GridwiseGemm_xdl_cshuffle_v3
     __device__ static constexpr auto GetBBlockDescriptor_BK0PerBlock_NPerBlock_BK1()
     {
         // B matrix in LDS memory, dst of blockwise copy
-        if constexpr(BBlockLdsExtraN)
+        if constexpr(BBlockLdsExtraN || BlkGemmPipelineVer == BlockGemmPipelineVersion::v4)
         {
             return make_naive_tensor_descriptor(
                 make_tuple(BK0Number, Number<NPerBlock>{}, BK1Number),
@@ -1303,8 +1303,11 @@ struct GridwiseGemm_xdl_cshuffle_v3
         // B Scale grid and buffer
         const auto b_scale_grid_desc_bn_ak = make_naive_tensor_descriptor(
             make_tuple(math::integer_divide_ceil(problem.N, ScaleBlockN),
-                       math::integer_divide_ceil(problem.K, ScaleBlockK)),
-            make_tuple(math::integer_divide_ceil(problem.K, ScaleBlockK), 1));
+                       math::integer_divide_ceil(problem.K, ScaleBlockK),
+                       ScaleBlockK),
+            make_tuple(math::integer_divide_ceil(problem.K, ScaleBlockK),
+                       1,
+                       0));
 
          const auto b_scale_grid_buf = make_dynamic_buffer<AddressSpaceEnum::Global>(
             p_b_scale_grid, b_scale_grid_desc_bn_ak.GetElementSpaceSize());
@@ -1435,11 +1438,12 @@ struct GridwiseGemm_xdl_cshuffle_v3
             KPerBlock);
 
         // b scale
+        static_assert(KPerBlock<=ScaleBlockK);
         const index_t ScaleSliceSizeN = NXdlPerWave;
         const index_t ScaleSliceSizeK = 1;
 
         constexpr auto b_scale_thread_desc = make_naive_tensor_descriptor_packed(
-            make_tuple(Number<ScaleSliceSizeN>{}, Number<ScaleSliceSizeK>{}));
+            make_tuple(Number<ScaleSliceSizeN>{}, Number<ScaleSliceSizeK>{}, Number<1>{}));
 
         constexpr index_t NWaves = NPerBlock / (NXdlPerWave * NPerXdl);
 
@@ -1451,17 +1455,18 @@ struct GridwiseGemm_xdl_cshuffle_v3
                                              BScaleType,
                                              decltype(b_scale_grid_desc_bn_ak),
                                              decltype(b_scale_thread_desc),
-                                             Sequence<1, ScaleSliceSizeK>,
-                                             Sequence<0, 1>,
+                                             Sequence<1, ScaleSliceSizeK, 1>,
+                                             Sequence<0, 1, 2>,
                                              1,
                                              1,
                                              1,
                                              false>(
                 b_scale_grid_desc_bn_ak,
-                make_multi_index(block_n_id * NPerBlock / ScaleBlockN + b_thread_offset, 0));
+                make_multi_index(block_n_id * NPerBlock / ScaleBlockN + b_thread_offset, 0, 0));
 
         constexpr auto b_scale_thread_slice_copy_step =
-            make_tuple(make_multi_index(NWaves * NPerXdl, 0), make_multi_index(-NPerBlock, 1));
+            make_tuple(make_multi_index(NWaves * NPerXdl, 0, 0),
+                       make_multi_index(-NPerBlock, KPerBlock/ScaleBlockK, KPerBlock%ScaleBlockK));
 
         const index_t num_k_block_per_scale = ScaleBlockK / KPerBlock;
 
@@ -1478,13 +1483,11 @@ struct GridwiseGemm_xdl_cshuffle_v3
                                                                          b_block_buf,
                                                                          b_block_slice_copy_step,
                                                                          c_thread_buf,
-
                                                                          b_scale_grid_desc_bn_ak,
                                                                          b_scale_thread_desc,
                                                                          b_scale_thread_copy,
                                                                          b_scale_grid_buf,
                                                                          b_scale_thread_slice_copy_step,
-
                                                                          num_k_block_main_loop,
                                                                          num_k_block_per_scale);
 
