@@ -39,20 +39,20 @@ template <typename ADataType,
           typename ALayout,
           typename BLayout,
           typename CLayout,
-          index_t  ScaleBlockK>
-struct DeviceOperationInstanceFactory<
-    ck::tensor_operation::device::DeviceGemmV2BScale<ALayout,
-                                                     BLayout,
-                                                     CLayout,
-                                                     ADataType,
-                                                     BDataType,
-                                                     BScaleDataType,
-                                                     CDataType,
-                                                     1,
-                                                     ScaleBlockK,
-                                                     ck::tensor_operation::element_wise::PassThrough,
-                                                     ck::tensor_operation::element_wise::PassThrough,
-                                                     ck::tensor_operation::element_wise::PassThrough>>
+          index_t ScaleBlockK>
+struct DeviceOperationInstanceFactory<ck::tensor_operation::device::DeviceGemmV2BScale<
+    ALayout,
+    BLayout,
+    CLayout,
+    ADataType,
+    BDataType,
+    BScaleDataType,
+    CDataType,
+    1,
+    ScaleBlockK,
+    ck::tensor_operation::element_wise::PassThrough,
+    ck::tensor_operation::element_wise::PassThrough,
+    ck::tensor_operation::element_wise::PassThrough>>
 {
     using DeviceOp = DeviceGemmV2BScale<ALayout,
                                         BLayout,
@@ -70,7 +70,7 @@ struct DeviceOperationInstanceFactory<
     static auto GetInstances()
     {
         std::vector<std::unique_ptr<DeviceOp>> op_ptrs;
-        
+
         if constexpr(is_same_v<ADataType, half_t> && is_same_v<BDataType, pk_i4_t> &&
                      is_same_v<CDataType, half_t>)
         {

@@ -13,9 +13,9 @@ namespace ck {
 
 __host__ __device__ inline half4_t pki4_to_half4(int q)
 {
-    const int LO = 0x000f000f;
-    const int HI = 0x00f000f0;
-    const int EX = 0x64006400;
+    constexpr int LO = 0x000f000f;
+    constexpr int HI = 0x00f000f0;
+    constexpr int EX = 0x64006400;
     // Guarantee that the `(a & b) | c` operations are LOP3s.
     // int lo = lop3<(0xf0 & 0xcc) | 0xaa>(q, LO, EX);
     // int hi = lop3<(0xf0 & 0xcc) | 0xaa>(q, HI, EX);
@@ -23,9 +23,9 @@ __host__ __device__ inline half4_t pki4_to_half4(int q)
     int hi = amd_assembly_and_or_b32(q, HI, EX);
     // We want signed int4 outputs, hence we fuse the `-8` symmetric zero point
     // directly into `SUB` and `ADD`.
-    const int SUB = 0xE408E408; //-8
-    const int MUL = 0x2c002c00; // 1/16
-    const int ADD = 0xd480d480; //-79
+    constexpr int SUB = 0xE408E408; //-8
+    constexpr int MUL = 0x2c002c00; // 1/16
+    constexpr int ADD = 0xd480d480; //-79
 
     vector_type<half_t, 4> res;
 
@@ -34,7 +34,15 @@ __host__ __device__ inline half4_t pki4_to_half4(int q)
 
     res.template AsType<half2_t>()(Number<1>{}) = amd_assembly_pk_fma_f16(
         bit_cast<half2_t>(hi), bit_cast<half2_t>(MUL), bit_cast<half2_t>(ADD));
-
+#if 0
+    asm volatile("v_and_or_b32 %0, %4, %5, %7  \n \
+   v_and_or_b32 %1, %4, %6, %7  \n \
+   v_pk_add_f16 %2, %0, %8      \n \
+   v_pk_fma_f16 %3, %1, %9, %10 \
+    " 
+    : "=v"(lo), "=v"(hi), "=v"(res.template AsType<half2_t>()(Number<0>{})), "=v"(res.template AsType<half2_t>()(Number<1>{}))
+    : "v"(q), "v"(LO), "v"(HI), "s"(EX), "s"(SUB), "v"(MUL), "s"(ADD), "0"(lo), "1"(hi));
+#endif
     return res.template AsType<half4_t>()[Number<0>{}];
 }
 
@@ -80,14 +88,14 @@ struct PassThroughPack8
     {
 #if 1
         int x_permute = 0;
-        int bits4_0 = (bit_cast<int>(x) >> 0) & 0xF; 
-        int bits4_1 = (bit_cast<int>(x) >> 4) & 0xF;
-        int bits4_2 = (bit_cast<int>(x) >> 8) & 0xF;
-        int bits4_3 = (bit_cast<int>(x) >> 12) & 0xF;
-        int bits4_4 = (bit_cast<int>(x) >> 16) & 0xF;
-        int bits4_5 = (bit_cast<int>(x) >> 20) & 0xF;
-        int bits4_6 = (bit_cast<int>(x) >> 24) & 0xF;
-        int bits4_7 = (bit_cast<int>(x) >> 28) & 0xF;
+        int bits4_0   = (bit_cast<int>(x) >> 0) & 0xF;
+        int bits4_1   = (bit_cast<int>(x) >> 4) & 0xF;
+        int bits4_2   = (bit_cast<int>(x) >> 8) & 0xF;
+        int bits4_3   = (bit_cast<int>(x) >> 12) & 0xF;
+        int bits4_4   = (bit_cast<int>(x) >> 16) & 0xF;
+        int bits4_5   = (bit_cast<int>(x) >> 20) & 0xF;
+        int bits4_6   = (bit_cast<int>(x) >> 24) & 0xF;
+        int bits4_7   = (bit_cast<int>(x) >> 28) & 0xF;
 
         x_permute |= (bits4_1 << 0);
         x_permute |= (bits4_3 << 4);
@@ -111,7 +119,7 @@ struct PassThroughPack8
         result.template AsType<half4_t>()(Number<0>{}) = pki4_to_half4(bit_cast<int>(x));
         result.template AsType<half4_t>()(Number<1>{}) = pki4_to_half4(bit_cast<int>(x) >> 8);
 
-        y = result.template AsType<half8_t>()[Number<0>{}];
+        y          = result.template AsType<half8_t>()[Number<0>{}];
 #else
         vector_type<half_t, 8> dst;
         vector_type<pk_i4_t, 4> src{x};
@@ -125,7 +133,7 @@ struct PassThroughPack8
         dst.template AsType<half2_t>()(Number<3>{}) =
             pki4_to_half2(src.template AsType<pk_i4_t>()[Number<3>{}]);
 
-        y          = dst.template AsType<half8_t>()[Number<0>{}];
+        y = dst.template AsType<half8_t>()[Number<0>{}];
 #endif
     }
 
