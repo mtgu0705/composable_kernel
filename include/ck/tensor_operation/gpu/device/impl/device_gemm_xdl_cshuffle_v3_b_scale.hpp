@@ -35,8 +35,8 @@ template <typename ALayout,
           typename CElementwiseOperation,
           GemmSpecialization GemmSpec,
           index_t BlockSize,
-          index_t ScaleBlockN,   // scale block for N
-          index_t ScaleBlockK,   // scale block for K
+          index_t ScaleBlockN, // scale block for N
+          index_t ScaleBlockK, // scale block for K
           index_t MPerBlock,
           index_t NPerBlock,
           index_t KPerBlock,
@@ -218,7 +218,12 @@ struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2BScale<ALayout,
             };
 
             constexpr index_t minimum_occupancy =
-                BlkGemmPipeSched == BlockGemmPipelineScheduler::Intrawave ? 1 : 2;
+                BlkGemmPipeSched == BlockGemmPipelineScheduler::Intrawave
+                    ? (BlkGemmPipelineVer == BlockGemmPipelineVersion::v3 &&
+                       MPerBlock * NPerBlock * KPerBlock * sizeof(ADataType) > 128 * 128 * 64 * 2)
+                          ? 1
+                          : 2
+                    : 2;
 
             if(has_main_k_block_loop)
             {
@@ -659,12 +664,25 @@ struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2BScale<ALayout,
                              index_t StrideB,
                              index_t StrideC,
                              const BScaleDataType* p_b_scale,
-                             index_t KBatch,                             
+                             index_t KBatch,
                              AElementwiseOperation a_element_op,
                              BElementwiseOperation b_element_op,
                              CElementwiseOperation c_element_op)
     {
-        return Argument{p_a, p_b, p_c, M, N, K, StrideA, StrideB, StrideC, p_b_scale, KBatch, a_element_op, b_element_op, c_element_op};
+        return Argument{p_a,
+                        p_b,
+                        p_c,
+                        M,
+                        N,
+                        K,
+                        StrideA,
+                        StrideB,
+                        StrideC,
+                        p_b_scale,
+                        KBatch,
+                        a_element_op,
+                        b_element_op,
+                        c_element_op};
     }
 
     static auto MakeInvoker() { return Invoker{}; }
@@ -680,7 +698,7 @@ struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2BScale<ALayout,
                                                       index_t StrideB,
                                                       index_t StrideC,
                                                       const void* p_b_scale,
-                                                      index_t KBatch,                                                      
+                                                      index_t KBatch,
                                                       AElementwiseOperation a_element_op,
                                                       BElementwiseOperation b_element_op,
                                                       CElementwiseOperation c_element_op) override

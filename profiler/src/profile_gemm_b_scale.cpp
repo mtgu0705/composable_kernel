@@ -32,8 +32,8 @@ enum struct GemmDataType
 
 enum struct BScaleBlockTile
 {
-    K_64, // 0
-    K_128,  // 1
+    K_64,  // 0
+    K_128, // 1
 };
 
 #define OP_NAME "gemm_b_scale"
@@ -82,7 +82,14 @@ int profile_gemm_b_scale(int argc, char* argv[])
     const int StrideB = std::stoi(argv[13]);
     const int StrideC = std::stoi(argv[14]);
     const int KBatch  = std::stoi(argv[15]);
-    printf("M:%d, N:%d, K:%d, StrideA:%d, StrideB:%d, StrideC:%d, KBatch:%d\n", M, N, K, StrideA, StrideB, StrideC, KBatch);
+    printf("M:%d, N:%d, K:%d, StrideA:%d, StrideB:%d, StrideC:%d, KBatch:%d\n",
+           M,
+           N,
+           K,
+           StrideA,
+           StrideB,
+           StrideC,
+           KBatch);
 
     int n_warmup      = 1;
     int n_iter        = 10;
@@ -156,14 +163,18 @@ int profile_gemm_b_scale(int argc, char* argv[])
         return pass ? 0 : 1;
     };
 
-    // if(data_type == GemmDataType::F16_I4_F16 && layout == GemmMatrixLayout::MK_NK_MN && B_scale_block == BScaleBlockTile::K_64)
+    // if(data_type == GemmDataType::F16_I4_F16 && layout == GemmMatrixLayout::MK_NK_MN &&
+    // B_scale_block == BScaleBlockTile::K_64)
     // {
-    //     return profile(F16{}, I4{}, F16{}, F16{}, F32{}, F16{}, ck::Number<64>{}, Row{}, Col{}, Row{});
+    //     return profile(F16{}, I4{}, F16{}, F16{}, F32{}, F16{}, ck::Number<64>{}, Row{}, Col{},
+    //     Row{});
     // }
-    if(data_type == GemmDataType::F16_I4_F16 && layout == GemmMatrixLayout::MK_NK_MN && B_scale_block == BScaleBlockTile::K_128)
+    if(data_type == GemmDataType::F16_I4_F16 && layout == GemmMatrixLayout::MK_NK_MN &&
+       B_scale_block == BScaleBlockTile::K_128)
     {
         printf("F16_I4_F16 MK_NK_MN K_128\n");
-        return profile(F16{}, I4{}, F16{}, F16{}, F32{}, F16{}, ck::Number<128>{}, Row{}, Col{}, Row{});
+        return profile(
+            F16{}, I4{}, F16{}, F16{}, F32{}, F16{}, ck::Number<128>{}, Row{}, Col{}, Row{});
     }
     else
     {

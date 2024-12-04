@@ -59,25 +59,25 @@ template <index_t BlockSize,
           // ,bool TransposeC //disable transposec right now...
           >
 struct BlockwiseGemmXdlops_pipeline_v2_b_scale<BlockGemmPipelineScheduler::Intrawave,
-                                                BlockSize,
-                                                ADataType,
-                                                BDataType,
-                                                ComputeDataType,
-                                                AccDataType,
-                                                ATileDesc,
-                                                BTileDesc,
-                                                AMmaTileDesc,
-                                                BMmaTileDesc,
-                                                ABlockTransferSrcScalarPerVector,
-                                                BBlockTransferSrcScalarPerVector,
-                                                MPerBlock,
-                                                NPerBlock,
-                                                KPerBlock,
-                                                MPerXDL,
-                                                NPerXDL,
-                                                MRepeat,
-                                                NRepeat,
-                                                KPack>
+                                               BlockSize,
+                                               ADataType,
+                                               BDataType,
+                                               ComputeDataType,
+                                               AccDataType,
+                                               ATileDesc,
+                                               BTileDesc,
+                                               AMmaTileDesc,
+                                               BMmaTileDesc,
+                                               ABlockTransferSrcScalarPerVector,
+                                               BBlockTransferSrcScalarPerVector,
+                                               MPerBlock,
+                                               NPerBlock,
+                                               KPerBlock,
+                                               MPerXDL,
+                                               NPerXDL,
+                                               MRepeat,
+                                               NRepeat,
+                                               KPack>
     : BlockwiseGemmXdlops_pipeline_base<BlockSize,
                                         ADataType,
                                         BDataType,
@@ -546,25 +546,25 @@ template <index_t BlockSize,
           // ,bool TransposeC //disable transposec right now...
           >
 struct BlockwiseGemmXdlops_pipeline_v2_b_scale<BlockGemmPipelineScheduler::Interwave,
-                                                BlockSize,
-                                                ADataType,
-                                                BDataType,
-                                                ComputeDataType,
-                                                AccDataType,
-                                                ATileDesc,
-                                                BTileDesc,
-                                                AMmaTileDesc,
-                                                BMmaTileDesc,
-                                                ABlockTransferSrcScalarPerVector,
-                                                BBlockTransferSrcScalarPerVector,
-                                                MPerBlock,
-                                                NPerBlock,
-                                                KPerBlock,
-                                                MPerXDL,
-                                                NPerXDL,
-                                                MRepeat,
-                                                NRepeat,
-                                                KPack>
+                                               BlockSize,
+                                               ADataType,
+                                               BDataType,
+                                               ComputeDataType,
+                                               AccDataType,
+                                               ATileDesc,
+                                               BTileDesc,
+                                               AMmaTileDesc,
+                                               BMmaTileDesc,
+                                               ABlockTransferSrcScalarPerVector,
+                                               BBlockTransferSrcScalarPerVector,
+                                               MPerBlock,
+                                               NPerBlock,
+                                               KPerBlock,
+                                               MPerXDL,
+                                               NPerXDL,
+                                               MRepeat,
+                                               NRepeat,
+                                               KPack>
     : BlockwiseGemmXdlops_pipeline_base<BlockSize,
                                         ADataType,
                                         BDataType,
@@ -719,16 +719,16 @@ struct BlockwiseGemmXdlops_pipeline_v2_b_scale<BlockGemmPipelineScheduler::Inter
                         const BBlockTransferStep& b_block_copy_step,
                         CThreadBuffer& c_thread_buf,
                         const BScaleGridDesc& b_scale_grid_desc,
-                        //BScaleThreadCopy
+                        // BScaleThreadCopy
                         const BScaleThreadDesc& b_scale_thread_desc,
                         BScaleThreadTransfer& b_scale_thread_copy,
                         const BScaleGridBuffer& b_scale_grid_buf,
                         const BScaleThreadTransferStep& b_scale_thread_copy_step,
-                        //num loop
+                        // num loop
                         index_t num_loop,
                         index_t num_loop_per_scale) const
     {
-        ignore            = num_loop_per_scale;
+        ignore = num_loop_per_scale;
 
         auto a_thread_buf = make_static_buffer<AddressSpaceEnum::Vgpr, ComputeDataType>(
             a_thread_desc_.GetElementSpaceSize());
@@ -751,7 +751,7 @@ struct BlockwiseGemmXdlops_pipeline_v2_b_scale<BlockGemmPipelineScheduler::Inter
                                     b_scale_thread_desc,
                                     make_tuple(n0, I0),
                                     b_scale_thread_buf);
-            
+
             b_scale_thread_copy.MoveSrcSliceWindow(b_scale_grid_desc,
                                                    b_scale_thread_copy_step.At(Number<0>{}));
         });
@@ -864,16 +864,16 @@ struct BlockwiseGemmXdlops_pipeline_v2_b_scale<BlockGemmPipelineScheduler::Inter
                                     }
                                 });
 
-                                // static_for<0, xdlops_gemm.GetRegSizePerXdlops(), 1>{}([&](auto t) {
+                                // static_for<0, xdlops_gemm.GetRegSizePerXdlops(), 1>{}([&](auto t)
+                                // {
                                 //     constexpr index_t c_offset =
                                 //         c_thread_desc_.CalculateOffset(make_tuple(m0, n0, t));
                                 //     c_thread_buf(Number<c_offset>{}) +=
-                                //         c_thread_buf_per_scale[Number<t>{}] *                                
+                                //         c_thread_buf_per_scale[Number<t>{}] *
                                 //         type_convert<AccDataType>(b_scale_thread_buf[n0]);
-                                // });      
-
+                                // });
                             });
-                        });                        
+                        });
                         __builtin_amdgcn_sched_barrier(0);
                         __builtin_amdgcn_s_setprio(0);
                         __builtin_amdgcn_sched_barrier(0);
@@ -983,10 +983,9 @@ struct BlockwiseGemmXdlops_pipeline_v2_b_scale<BlockGemmPipelineScheduler::Inter
                             //     constexpr index_t c_offset =
                             //         c_thread_desc_.CalculateOffset(make_tuple(m0, n0, t));
                             //     c_thread_buf(Number<c_offset>{}) +=
-                            //         c_thread_buf_per_scale[Number<t>{}] *                                
+                            //         c_thread_buf_per_scale[Number<t>{}] *
                             //         type_convert<AccDataType>(b_scale_thread_buf[n0]);
                             // });
-
                         });
                     });
                     __builtin_amdgcn_sched_barrier(0);
@@ -1084,7 +1083,6 @@ struct BlockwiseGemmXdlops_pipeline_v2_b_scale<BlockGemmPipelineScheduler::Inter
                         //         c_thread_buf_per_scale[Number<t>{}] *
                         //         type_convert<AccDataType>(b_scale_thread_buf[n0]);
                         // });
-
                     });
                 });
                 __builtin_amdgcn_sched_barrier(0);

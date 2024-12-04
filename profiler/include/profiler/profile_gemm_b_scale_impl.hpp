@@ -30,24 +30,24 @@ template <typename ADataType,
           typename ComputeDataType,
           typename AccDataType,
           typename CDataType,
-          index_t  ScaleBlockK,
+          index_t ScaleBlockK,
           typename ALayout,
           typename BLayout,
           typename CLayout>
 bool profile_gemm_b_scale_impl(int do_verification,
-                                 int init_method,
-                                 bool do_log,
-                                 bool time_kernel,
-                                 int M,
-                                 int N,
-                                 int K,
-                                 int StrideA,
-                                 int StrideB,
-                                 int StrideC,
-                                 int KBatch,
-                                 int n_warmup,
-                                 int n_iter,
-                                 uint64_t rotating = 0)
+                               int init_method,
+                               bool do_log,
+                               bool time_kernel,
+                               int M,
+                               int N,
+                               int K,
+                               int StrideA,
+                               int StrideB,
+                               int StrideC,
+                               int KBatch,
+                               int n_warmup,
+                               int n_iter,
+                               uint64_t rotating = 0)
 {
     bool pass = true;
 
@@ -66,24 +66,25 @@ bool profile_gemm_b_scale_impl(int do_verification,
         };
 
     ck::index_t Scale_Stride_BN = ck::is_same_v<BLayout, ck::tensor_layout::gemm::ColumnMajor>
-                                    ? ((K + ScaleBlockK - 1) / ScaleBlockK)
-                                    : N;
+                                      ? ((K + ScaleBlockK - 1) / ScaleBlockK)
+                                      : N;
 
     Tensor<ADataType> a_m_k(f_host_tensor_descriptor(M, K, StrideA, ALayout{}));
     Tensor<BDataType> b_k_n(f_host_tensor_descriptor(K, N, StrideB, BLayout{}));
     Tensor<BDataType> b_k_n_permute(f_host_tensor_descriptor(K, N, StrideB, BLayout{}));
-    Tensor<BScaleDataType> b1_k_n(f_host_tensor_descriptor((K + ScaleBlockK - 1) / ScaleBlockK,       // K direction group size is ScaleBlockK
-                                                       N,                                         // N direction group size is 1
-                                                       Scale_Stride_BN,
-                                                       BLayout{}));
+    Tensor<BScaleDataType> b1_k_n(f_host_tensor_descriptor(
+        (K + ScaleBlockK - 1) / ScaleBlockK, // K direction group size is ScaleBlockK
+        N,                                   // N direction group size is 1
+        Scale_Stride_BN,
+        BLayout{}));
     Tensor<CDataType> c_m_n_host_result(f_host_tensor_descriptor(M, N, StrideC, CLayout{}));
     Tensor<CDataType> c_m_n_device_result(f_host_tensor_descriptor(M, N, StrideC, CLayout{}));
 
     int total_gemm_needed = a_m_k.GetElementSpaceSizeInBytes() +
                             b_k_n.GetElementSpaceSizeInBytes() +
                             b1_k_n.GetElementSpaceSizeInBytes();
-    
-    int rotating_count    = std::max(
+
+    int rotating_count = std::max(
         1,
         std::min(n_iter,
                  static_cast<int>(std::ceil(static_cast<double>(rotating) / total_gemm_needed))));
@@ -167,9 +168,8 @@ bool profile_gemm_b_scale_impl(int do_verification,
                 i4  = i4 - 8;
                 v_b = ck::type_convert<float>(i4);
 
-                b_k_n_dequant(k, n) =
-                    ck::type_convert<float>(v_b) *
-                    ck::type_convert<float>(b1_k_n(k / ScaleBlockK, n));
+                b_k_n_dequant(k, n) = ck::type_convert<float>(v_b) *
+                                      ck::type_convert<float>(b1_k_n(k / ScaleBlockK, n));
             }
         }
         using ReferenceGemmInstance = ck::tensor_operation::host::ReferenceGemm<ADataType,
@@ -291,21 +291,21 @@ bool profile_gemm_b_scale_impl(int do_verification,
         {
             auto kbatch_curr = kbatch_list[i];
 
-            auto argument_ptr =
-                op_ptr->MakeArgumentPointer(static_cast<ADataType*>(a_device_buf.GetDeviceBuffer()),
-                                            static_cast<BDataType*>(b_device_buf.GetDeviceBuffer()),
-                                            static_cast<CDataType*>(c_device_buf.GetDeviceBuffer()),
-                                            M,
-                                            N,
-                                            K,
-                                            StrideA,
-                                            StrideB,
-                                            StrideC,
-                                            static_cast<BScaleDataType*>(b1_device_buf.GetDeviceBuffer()),
-                                            kbatch_curr,
-                                            a_element_op,
-                                            b_element_op,
-                                            c_element_op);
+            auto argument_ptr = op_ptr->MakeArgumentPointer(
+                static_cast<ADataType*>(a_device_buf.GetDeviceBuffer()),
+                static_cast<BDataType*>(b_device_buf.GetDeviceBuffer()),
+                static_cast<CDataType*>(c_device_buf.GetDeviceBuffer()),
+                M,
+                N,
+                K,
+                StrideA,
+                StrideB,
+                StrideC,
+                static_cast<BScaleDataType*>(b1_device_buf.GetDeviceBuffer()),
+                kbatch_curr,
+                a_element_op,
+                b_element_op,
+                c_element_op);
 
             auto invoker_ptr = op_ptr->MakeInvokerPointer();
 
