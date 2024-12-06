@@ -45,24 +45,6 @@ __global__ void
         karg.p_c_grid + splitk_batch_offset.c_reduce_offset,
         p_shared,
         karg);
-
-    // int q = 0x01234567;
-
-    // ck::vector_type<ck::bhalf_t, 8> res;
-    // res.template AsType<ck::bhalf4_t>()(ck::Number<0>{}) = ck::pki4_to_bhalf4(q >> 16);
-    // res.template AsType<ck::bhalf4_t>()(ck::Number<1>{}) = ck::pki4_to_bhalf4(q);
-
-    // if(threadIdx.x == 0 && blockIdx.x == 0)
-    // printf("%f %f %f %f %f %f %f %f\n",
-    // ck::type_convert<float>(res.template AsType<ck::bhalf_t>()[Number<0>{}]),
-    // ck::type_convert<float>(res.template AsType<ck::bhalf_t>()[Number<1>{}]),
-    // ck::type_convert<float>(res.template AsType<ck::bhalf_t>()[Number<2>{}]),
-    // ck::type_convert<float>(res.template AsType<ck::bhalf_t>()[Number<3>{}]),
-    // ck::type_convert<float>(res.template AsType<ck::bhalf_t>()[Number<4>{}]),
-    // ck::type_convert<float>(res.template AsType<ck::bhalf_t>()[Number<5>{}]),
-    // ck::type_convert<float>(res.template AsType<ck::bhalf_t>()[Number<6>{}]),
-    // ck::type_convert<float>(res.template AsType<ck::bhalf_t>()[Number<7>{}])
-    //);
 #else
     ignore = karg;
 #endif // end of if (defined(__gfx9__))

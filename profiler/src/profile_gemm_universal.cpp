@@ -106,7 +106,7 @@ int profile_gemm_universal(int argc, char* argv[])
 #if defined(CK_USE_FP8_ON_UNSUPPORTED_ARCH) || defined(CK_USE_GFX94)
     using F8 = ck::f8_t;
 #endif
-    using I4   = ck::pk_i4_t;
+    using I4 = ck::pk_i4_t;
 
     using Row = ck::tensor_layout::gemm::RowMajor;
     using Col = ck::tensor_layout::gemm::ColumnMajor;

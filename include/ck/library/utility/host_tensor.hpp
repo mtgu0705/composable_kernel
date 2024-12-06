@@ -266,18 +266,18 @@ struct Tensor
     using Data       = std::vector<T>;
 
     template <typename X>
-    Tensor(std::initializer_list<X> lens) : mDesc(lens), mData(mDesc.GetElementSpaceSize())
+    Tensor(std::initializer_list<X> lens) : mDesc(lens), mData(GetElementSpaceSize())
     {
     }
 
     template <typename X, typename Y>
     Tensor(std::initializer_list<X> lens, std::initializer_list<Y> strides)
-        : mDesc(lens, strides), mData(mDesc.GetElementSpaceSize())
+        : mDesc(lens, strides), mData(GetElementSpaceSize())
     {
     }
 
     template <typename Lengths>
-    Tensor(const Lengths& lens) : mDesc(lens), mData(mDesc.GetElementSpaceSize())
+    Tensor(const Lengths& lens) : mDesc(lens), mData(GetElementSpaceSize())
     {
     }
 
@@ -287,7 +287,7 @@ struct Tensor
     {
     }
 
-    Tensor(const Descriptor& desc) : mDesc(desc), mData(mDesc.GetElementSpaceSize()) {}
+    Tensor(const Descriptor& desc) : mDesc(desc), mData(GetElementSpaceSize()) {}
 
     template <typename OutT>
     Tensor<OutT> CopyAsType() const
@@ -324,7 +324,7 @@ struct Tensor
 
     std::size_t GetElementSpaceSize() const
     {
-        if constexpr(ck::is_same_v<T, ck::pk_i4_t>)
+        if constexpr(ck::is_same_v<ck::remove_cvref_t<T>, ck::pk_i4_t>)
             return mDesc.GetElementSpaceSize() / 2;
         else
             return mDesc.GetElementSpaceSize();
@@ -475,7 +475,7 @@ struct Tensor
     template <typename... Is>
     std::size_t GetOffsetFromMultiIndex(Is... is) const
     {
-        if constexpr(ck::is_same_v<T, ck::pk_i4_t>)
+        if constexpr(ck::is_same_v<ck::remove_cvref_t<T>, ck::pk_i4_t>)
         {
             return mDesc.GetOffsetFromMultiIndex(is...) / 2;
         }
@@ -488,7 +488,7 @@ struct Tensor
     template <typename... Is>
     T& operator()(Is... is)
     {
-        if constexpr(ck::is_same_v<T, ck::pk_i4_t>)
+        if constexpr(ck::is_same_v<ck::remove_cvref_t<T>, ck::pk_i4_t>)
         {
             return mData[mDesc.GetOffsetFromMultiIndex(is...) / 2];
         }
@@ -501,7 +501,7 @@ struct Tensor
     template <typename... Is>
     const T& operator()(Is... is) const
     {
-        if constexpr(ck::is_same_v<T, ck::pk_i4_t>)
+        if constexpr(ck::is_same_v<ck::remove_cvref_t<T>, ck::pk_i4_t>)
         {
             return mData[mDesc.GetOffsetFromMultiIndex(is...) / 2];
         }
@@ -513,7 +513,7 @@ struct Tensor
 
     T& operator()(std::vector<std::size_t> idx)
     {
-        if constexpr(ck::is_same_v<T, ck::pk_i4_t>)
+        if constexpr(ck::is_same_v<ck::remove_cvref_t<T>, ck::pk_i4_t>)
         {
             return mData[mDesc.GetOffsetFromMultiIndex(idx) / 2];
         }
@@ -525,7 +525,7 @@ struct Tensor
 
     const T& operator()(std::vector<std::size_t> idx) const
     {
-        if constexpr(ck::is_same_v<T, ck::pk_i4_t>)
+        if constexpr(ck::is_same_v<ck::remove_cvref_t<T>, ck::pk_i4_t>)
         {
             return mData[mDesc.GetOffsetFromMultiIndex(idx) / 2];
         }
