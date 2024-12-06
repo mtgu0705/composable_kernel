@@ -82,7 +82,6 @@ set(PROFILER_SOURCES
 #  list(APPEND PROFILER_SOURCES profile_batched_gemm_multi_d.cpp)
 #  list(APPEND PROFILER_SOURCES profile_grouped_conv_bwd_weight.cpp)
 #endif()
-
 set(PROFILER_EXECUTABLE ckProfiler)
 
 add_executable(${PROFILER_EXECUTABLE} ${PROFILER_SOURCES})
@@ -176,5 +175,4 @@ target_link_libraries(${PROFILER_EXECUTABLE} PRIVATE utility getopt::getopt)
 #  target_link_libraries(${PROFILER_EXECUTABLE} PRIVATE device_grouped_conv2d_bwd_weight_instance)
 #  target_link_libraries(${PROFILER_EXECUTABLE} PRIVATE device_grouped_conv3d_bwd_weight_instance)
 #endif()
-
 rocm_install(TARGETS ${PROFILER_EXECUTABLE} COMPONENT profiler)
