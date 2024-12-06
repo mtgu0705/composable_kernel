@@ -21,7 +21,7 @@ using CElementOp = PassThrough;
 
 static constexpr auto GemmDefault = ck::tensor_operation::device::GemmSpecialization::Default;
 
-static constexpr bool PermuteB = false;
+static constexpr bool PermuteB = true;
 
 static constexpr ck::index_t KPerBlock = 128;
 
@@ -179,7 +179,7 @@ bool run_gemm(const ProblemType& problem_size, const ExecutionConfig& config)
         }
     }
 
-#if 0
+#if 1
     // vector pk_i4x4 permute
     for(int i = 0; i < N; i++)
     {
@@ -189,7 +189,7 @@ bool run_gemm(const ProblemType& problem_size, const ExecutionConfig& config)
 
             for(int k = 0; k < 4; k++)
             {
-                int i4x2         = b_k_n_permute(j + k * 2, i);
+                int i4x2         = b_k_n_permute(j + k * 2, i).data;
                 input[k * 2 + 0] = (i4x2 >> 4) & 0xf;
                 input[k * 2 + 1] = (i4x2 >> 0) & 0xf;
             }
