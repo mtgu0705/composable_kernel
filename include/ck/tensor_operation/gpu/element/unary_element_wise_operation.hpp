@@ -39,7 +39,7 @@ __host__ __device__ inline half4_t pki4_to_half4(int q)
 
 __host__ __device__ inline half2_t pki4_to_half2(pk_i4_t q)
 {
-#if 0
+#if 1
     uint8_t x_u8 = ck::bit_cast<uint8_t>(q);
     uint32_t i4s = ((x_u8 & 0x0f) << 16) | ((x_u8 & 0xf0) >> 4);
 
@@ -118,7 +118,7 @@ struct PassThroughPack8
 
     __host__ __device__ constexpr void operator()(ck::half8_t& y, const ck::pk_i4x4_t& x) const
     {
-#if 0
+#if 1
         vector_type<half_t, 8> result;
 
         result.template AsType<half4_t>()(Number<0>{}) = pki4_to_half4(bit_cast<int>(x));
@@ -251,6 +251,12 @@ struct PassThrough final : public UnaryOpBase
 
     template <typename Y, typename X>
     __host__ __device__ void operator()(Y& y, const X& x) const;
+
+    template <>
+    __host__ __device__ void operator()<pk_i4_t, pk_i4_t>(pk_i4_t& y, const pk_i4_t& x) const
+    {
+        y = x;
+    }
 
     template <>
     __host__ __device__ void operator()<float, double>(float& y, const double& x) const
