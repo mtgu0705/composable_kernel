@@ -240,7 +240,7 @@ struct DequantPack8
     __host__ __device__ constexpr void
     operator()(ck::half8_t& y, const ck::pk_i4x4_t& x, const ck::half2_t& z) const
     {
-#if 1
+#if 0
         int x_permute = 0;
         int bits4_0   = (bit_cast<int>(x) >> 0) & 0xF;
         int bits4_1   = (bit_cast<int>(x) >> 4) & 0xF;
