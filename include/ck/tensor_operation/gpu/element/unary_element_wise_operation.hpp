@@ -11,6 +11,98 @@
 
 namespace ck {
 
+__host__ __device__ inline half4_t pki4_to_half4_scale(int q, const ck::half2_t& scale)
+{
+    constexpr int LO = 0x000f000f;
+    constexpr int HI = 0x00f000f0;
+    constexpr int EX = 0x64006400;
+    // Guarantee that the `(a & b) | c` operations are LOP3s.
+    // int lo = lop3<(0xf0 & 0xcc) | 0xaa>(q, LO, EX);
+    // int hi = lop3<(0xf0 & 0xcc) | 0xaa>(q, HI, EX);
+    int lo = amd_assembly_and_or_b32(q, LO, EX);
+    int hi = amd_assembly_and_or_b32(q, HI, EX);
+    // We want signed int4 outputs, hence we fuse the `-8` symmetric zero point
+    // directly into `SUB` and `ADD`.
+    constexpr int SUB = 0xE408E408; //-8
+    constexpr int MUL = 0x2c002c00; // 1/16
+    constexpr int ADD = 0xd480d480; //-79
+
+    vector_type<half_t, 4> res;
+
+    res.template AsType<half2_t>()(Number<0>{}) =
+        amd_assembly_pk_add_f16(bit_cast<half2_t>(lo), bit_cast<half2_t>(SUB));
+
+    res.template AsType<half2_t>()(Number<1>{}) = amd_assembly_pk_fma_f16(
+        bit_cast<half2_t>(hi), bit_cast<half2_t>(MUL), bit_cast<half2_t>(ADD));
+
+    asm volatile("v_pk_mul_f16 %0, %1, %2"
+                 : "=v"(res.template AsType<half2_t>()(Number<0>{}))
+                 : "v"(res.template AsType<half2_t>()(Number<0>{})), "v"(scale));
+
+    asm volatile("v_pk_mul_f16 %0, %1, %2"
+                 : "=v"(res.template AsType<half2_t>()(Number<1>{}))
+                 : "v"(res.template AsType<half2_t>()(Number<1>{})), "v"(scale));
+
+    return res.template AsType<half4_t>()[Number<0>{}];
+}
+
+// Further fuse the scale into inline assembly, sanity failed
+#if 0
+__host__ __device__ inline half4_t pki4_to_half4_scale(int q, const ck::half_t& scale)
+{
+    constexpr int LO = 0x000f000f;
+    constexpr int HI = 0x00f000f0;
+    constexpr int EX = 0x64006400;
+    // Guarantee that the `(a & b) | c` operations are LOP3s.
+    // int lo = lop3<(0xf0 & 0xcc) | 0xaa>(q, LO, EX);
+    // int hi = lop3<(0xf0 & 0xcc) | 0xaa>(q, HI, EX);
+    int lo = amd_assembly_and_or_b32(q, LO, EX);
+    int hi = amd_assembly_and_or_b32(q, HI, EX);
+    // We want signed int4 outputs, hence we fuse the `-8` symmetric zero point
+    // directly into `SUB` and `ADD`.
+    // constexpr int SUB = 0xE408E408; //-8
+    // constexpr int MUL = 0x2c002c00; // 1/16
+    // constexpr int ADD = 0xd480d480; //-79
+    constexpr half_t SUB = bit_cast<half_t>(static_cast<uint16_t>(0xE408));
+    constexpr half_t MUL = bit_cast<half_t>(static_cast<uint16_t>(0x2c00));
+    constexpr half_t ADD = bit_cast<half_t>(static_cast<uint16_t>(0xd480));
+
+    vector_type<half_t, 2> scale_2;
+    scale_2.template AsType<half_t>()(Number<0>{}) = scale;
+    scale_2.template AsType<half_t>()(Number<1>{}) = scale;
+    vector_type<half_t, 2> sub_2;
+    sub_2.template AsType<half_t>()(Number<0>{}) = SUB * scale;
+    sub_2.template AsType<half_t>()(Number<1>{}) = SUB * scale;
+    vector_type<half_t, 2> mul_2;
+    mul_2.template AsType<half_t>()(Number<0>{}) = MUL * scale;
+    mul_2.template AsType<half_t>()(Number<1>{}) = MUL * scale;
+    vector_type<half_t, 2> add_2;
+    add_2.template AsType<half_t>()(Number<0>{}) = ADD * scale;
+    add_2.template AsType<half_t>()(Number<1>{}) = ADD * scale;
+
+    vector_type<half_t, 4> res;
+
+    res.template AsType<half2_t>()(Number<0>{}) =
+        amd_assembly_pk_fma_f16(bit_cast<half2_t>(lo),
+                                scale_2.template AsType<half2_t>()(Number<0>{}),
+                                sub_2.template AsType<half2_t>()(Number<0>{}));
+
+    res.template AsType<half2_t>()(Number<1>{}) =
+        amd_assembly_pk_fma_f16(bit_cast<half2_t>(hi),
+                                mul_2.template AsType<half2_t>()(Number<0>{}),
+                                add_2.template AsType<half2_t>()(Number<0>{}));
+
+    // asm volatile("v_pk_mul_f16 %0, %1, %2"
+    //              : "=v"(res.template AsType<half2_t>()(Number<0>{}))
+    //              : "v"(res.template AsType<half2_t>()(Number<0>{})), "v"(scale));
+
+    // asm volatile("v_pk_mul_f16 %0, %1, %2"
+    //              : "=v"(res.template AsType<half2_t>()(Number<1>{}))
+    //              : "v"(res.template AsType<half2_t>()(Number<1>{})), "v"(scale));
+
+    return res.template AsType<half4_t>()[Number<0>{}];
+}
+#endif
 __host__ __device__ inline half4_t pki4_to_half4(int q)
 {
     constexpr int LO = 0x000f000f;
@@ -118,6 +210,69 @@ struct PassThroughPack8
 
         result.template AsType<half4_t>()(Number<0>{}) = pki4_to_half4(bit_cast<int>(x));
         result.template AsType<half4_t>()(Number<1>{}) = pki4_to_half4(bit_cast<int>(x) >> 8);
+
+        y = result.template AsType<half8_t>()[Number<0>{}];
+#else
+        vector_type<half_t, 8> dst;
+        vector_type<pk_i4_t, 4> src{x};
+
+        dst.template AsType<half2_t>()(Number<0>{}) =
+            pki4_to_half2(src.template AsType<pk_i4_t>()[Number<0>{}]);
+        dst.template AsType<half2_t>()(Number<1>{}) =
+            pki4_to_half2(src.template AsType<pk_i4_t>()[Number<1>{}]);
+        dst.template AsType<half2_t>()(Number<2>{}) =
+            pki4_to_half2(src.template AsType<pk_i4_t>()[Number<2>{}]);
+        dst.template AsType<half2_t>()(Number<3>{}) =
+            pki4_to_half2(src.template AsType<pk_i4_t>()[Number<3>{}]);
+
+        y = dst.template AsType<half8_t>()[Number<0>{}];
+#endif
+    }
+
+    constexpr const static bool is_pack8_invocable = true;
+};
+
+struct DequantPack8
+{
+    template <typename Y, typename X, typename Z>
+    __host__ __device__ void operator()(Y& y, const X& x, const Z& z) const;
+
+    __host__ __device__ constexpr void
+    operator()(ck::half8_t& y, const ck::pk_i4x4_t& x, const ck::half2_t& z) const
+    {
+#if 0
+        int x_permute = 0;
+        int bits4_0   = (bit_cast<int>(x) >> 0) & 0xF;
+        int bits4_1   = (bit_cast<int>(x) >> 4) & 0xF;
+        int bits4_2   = (bit_cast<int>(x) >> 8) & 0xF;
+        int bits4_3   = (bit_cast<int>(x) >> 12) & 0xF;
+        int bits4_4   = (bit_cast<int>(x) >> 16) & 0xF;
+        int bits4_5   = (bit_cast<int>(x) >> 20) & 0xF;
+        int bits4_6   = (bit_cast<int>(x) >> 24) & 0xF;
+        int bits4_7   = (bit_cast<int>(x) >> 28) & 0xF;
+
+        x_permute |= (bits4_1 << 0);
+        x_permute |= (bits4_3 << 4);
+        x_permute |= (bits4_5 << 8);
+        x_permute |= (bits4_7 << 12);
+        x_permute |= (bits4_0 << 16);
+        x_permute |= (bits4_2 << 20);
+        x_permute |= (bits4_4 << 24);
+        x_permute |= (bits4_6 << 28);
+
+        vector_type<half_t, 8> result;
+
+        result.template AsType<half4_t>()(Number<0>{}) = pki4_to_half4_scale(x_permute, z);
+        result.template AsType<half4_t>()(Number<1>{}) = pki4_to_half4_scale(x_permute >> 8, z);
+
+        y = result.template AsType<half8_t>()[Number<0>{}];
+
+#elif 1
+        vector_type<half_t, 8> result;
+
+        result.template AsType<half4_t>()(Number<0>{}) = pki4_to_half4_scale(bit_cast<int>(x), z);
+        result.template AsType<half4_t>()(Number<1>{}) =
+            pki4_to_half4_scale(bit_cast<int>(x) >> 8, z);
 
         y          = result.template AsType<half8_t>()[Number<0>{}];
 #else

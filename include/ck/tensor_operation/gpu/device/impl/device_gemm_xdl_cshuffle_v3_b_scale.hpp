@@ -220,9 +220,9 @@ struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2BScale<ALayout,
             constexpr index_t minimum_occupancy =
                 BlkGemmPipeSched == BlockGemmPipelineScheduler::Intrawave
                     ? (BlkGemmPipelineVer == BlockGemmPipelineVersion::v3 &&
-                       MPerBlock * NPerBlock * KPerBlock * sizeof(ADataType) > 128 * 128 * 64 * 2)
-                          ? 1
-                          : 2
+                       MPerBlock * NPerBlock * KPerBlock * sizeof(ADataType) <= 128 * 128 * 64 * 2)
+                          ? 2
+                          : 1
                     : 2;
 
             if(has_main_k_block_loop)

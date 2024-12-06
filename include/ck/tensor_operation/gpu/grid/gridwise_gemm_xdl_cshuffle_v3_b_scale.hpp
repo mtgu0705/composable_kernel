@@ -1914,7 +1914,9 @@ struct GridwiseGemm_xdl_cshuffle_v3
                 make_multi_index(block_n_id * NPerBlock / ScaleBlockN + b_thread_offset, 0));
 
         constexpr auto b_scale_thread_slice_copy_step =
-            make_tuple(make_multi_index(NWaves * NPerXdl, 0), make_multi_index(-NPerBlock, 1));
+            make_tuple(make_multi_index(NWaves * NPerXdl, 0),
+                       make_multi_index(-NPerBlock, 0),
+                       make_multi_index(-NPerBlock, 1));
 
         const index_t num_k_block_per_scale = ScaleBlockK / KPerBlock;
 
