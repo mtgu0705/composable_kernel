@@ -94,11 +94,13 @@ int profile_gemm_b_scale(int argc, char* argv[])
     int n_warmup      = 1;
     int n_iter        = 10;
     uint64_t rotating = 0;
-    if(argc == 18)
+    if(argc == 19)
     {
         n_warmup = std::stoi(argv[16]);
         n_iter   = std::stoi(argv[17]);
         rotating = std::stoull(argv[18]) * 1024 * 1024;
+
+        printf("n_warmup:%d, n_iter:%d, rotating:%lu\n", n_warmup, n_iter, rotating);
     }
 
     using F32  = float;
