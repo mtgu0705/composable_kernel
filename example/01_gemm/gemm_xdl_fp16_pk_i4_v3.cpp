@@ -166,7 +166,6 @@ bool run_gemm(const ProblemType& problem_size, const ExecutionConfig& config)
         }
     }
 
-#if 1
     // vector pk_i4x4 permute
     for(int i = 0; i < N; i++)
     {
@@ -215,7 +214,6 @@ bool run_gemm(const ProblemType& problem_size, const ExecutionConfig& config)
             }
         }
     }
-#endif
 
     a_m_k_device_buf.ToDevice(a_m_k.mData.data());
     b_k_n_device_buf.ToDevice(b_k_n_permute.mData.data());
