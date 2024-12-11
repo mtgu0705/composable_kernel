@@ -513,7 +513,7 @@ include_directories(BEFORE
 
 SET(BUILD_DEV ON CACHE BOOL "BUILD_DEV")
 if(BUILD_DEV)
-    #add_compile_options(-Werror)
+    add_compile_options(-Werror)
     add_compile_options(-Weverything)
 endif()
 message("CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
@@ -580,9 +580,9 @@ if(NOT GPU_ARCHS AND USER_GPU_TARGETS)
         PACKAGE_NAME examples
    )
    add_subdirectory(example)
-   #if(BUILD_TESTING)
-	   #add_subdirectory(test)
-   #endif()
+   if(BUILD_TESTING)
+	   add_subdirectory(test)
+   endif()
 endif()
 
 rocm_package_setup_component(profiler
@@ -591,9 +591,9 @@ rocm_package_setup_component(profiler
 )
 add_subdirectory(profiler)
 
-#if(CK_USE_CODEGEN AND (GPU_TARGETS MATCHES "gfx9" OR GPU_ARCHS))
-  #add_subdirectory(codegen)
-#endif()
+if(CK_USE_CODEGEN AND (GPU_TARGETS MATCHES "gfx9" OR GPU_ARCHS))
+  add_subdirectory(codegen)
+endif()
 
 #Create an interface target for the include only files and call it "composablekernels"
 include(CMakePackageConfigHelpers)
