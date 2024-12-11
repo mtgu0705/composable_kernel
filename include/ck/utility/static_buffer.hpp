@@ -114,8 +114,7 @@ struct StaticBufferTupleOfVector
 
     // Get X
     // i is offset of S, not X. i should be aligned to X
-    template <typename X,
-              index_t I>
+    template <typename X, index_t I>
     __host__ __device__ constexpr auto GetAsType(Number<I> i) const
     {
         constexpr auto s_per_x = Number<scalar_type<remove_cvref_t<X>>::vector_size>{};
@@ -131,8 +130,7 @@ struct StaticBufferTupleOfVector
 
     // Set X
     // i is offset of S, not X. i should be aligned to X
-    template <typename X,
-              index_t I>
+    template <typename X, index_t I>
     __host__ __device__ constexpr void SetAsType(Number<I> i, X x)
     {
         constexpr auto s_per_x = Number<scalar_type<remove_cvref_t<X>>::vector_size>{};

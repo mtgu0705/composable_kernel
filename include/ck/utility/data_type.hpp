@@ -11,9 +11,8 @@ namespace ck {
 using bhalf_t = ushort;
 using half_t  = _Float16;
 using int4_t  = _BitInt(4);
-using f8_t    = _BitInt(8);
-using bf8_t   = unsigned _BitInt(8);
-//using pk_i4_t = uint8_t;
+
+// custom data type - pack int4 data
 struct pk_i4_t
 {
     using type = int8_t;
@@ -1894,17 +1893,10 @@ using bf8x32_t = bf8x32_fnuz_t;
 using bf8x64_t = bf8x64_fnuz_t;
 #endif
 
+// pack int4
 using pk_i4x2_t = typename vector_type<pk_i4_t, 2>::type;
 using pk_i4x4_t = typename vector_type<pk_i4_t, 4>::type;
 using pk_i4x8_t = typename vector_type<pk_i4_t, 8>::type;
-
-// u8
-// using uint8x2_t  = typename vector_type<uint8_t, 2>::type;
-// using uint8x4_t  = typename vector_type<uint8_t, 4>::type;
-// using uint8x8_t  = typename vector_type<uint8_t, 8>::type;
-// using uint8x16_t = typename vector_type<uint8_t, 16>::type;
-// using uint8x32_t = typename vector_type<uint8_t, 32>::type;
-// using uint8x64_t = typename vector_type<uint8_t, 64>::type;
 
 template <typename T>
 struct NumericLimits

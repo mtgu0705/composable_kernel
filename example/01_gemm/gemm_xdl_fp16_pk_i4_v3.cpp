@@ -21,6 +21,7 @@ using CElementOp = PassThrough;
 
 static constexpr auto GemmDefault = ck::tensor_operation::device::GemmSpecialization::Default;
 
+static constexpr bool PermuteA = false;
 static constexpr bool PermuteB = true;
 
 static constexpr ck::index_t KPerBlock = 128;
@@ -31,7 +32,6 @@ using DeviceGemmV2Instance =
         ALayout,   BLayout,  CLayout,   
         ADataType, BDataType, CDataType, AccDataType, CShuffleDataType, 
         AElementOp, BElementOp, CElementOp, GemmDefault, 
-#if 0
         128,
         16, 128,
         KPerBlock, 8, 32,
@@ -42,19 +42,7 @@ using DeviceGemmV2Instance =
         S<4, 32, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
         2, 32, 32, 0,
         1, 1, S<1, 16, 1, 8>, 4,
-#else
-        128,
-        16, 64,
-        KPerBlock, 8, 32,
-        16,   16,
-        1,    2,
-        S<16, 8, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
-        2, 8, 8, 0,
-        S<4, 32, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
-        2, 32, 32, 0,
-        1, 1, S<1, 16, 1, 8>, 4,
-#endif
-        ck::BlockGemmPipelineScheduler::Interwave, ck::BlockGemmPipelineVersion::v2, ADataType, ADataType, false, PermuteB>;
+        ck::BlockGemmPipelineScheduler::Interwave, ck::BlockGemmPipelineVersion::v2, ADataType, ADataType, PermuteA, PermuteB>;
 
 // clang-format on
 
@@ -283,55 +271,6 @@ bool run_gemm(const ProblemType& problem_size, const ExecutionConfig& config)
                                      "Error: Incorrect results!",
                                      get_rtol<CDataType>(),
                                      get_atol<CDataType>());
-
-#if 0
-        std::cout << "a_m_k: " << std::endl;
-        for(int i = 0; i < M; i++)
-        {
-            for(int j = 0; j < K; j++)
-            {
-                std::cout << ck::type_convert<float>(a_m_k(i, j)) << ",";
-            }
-            std::cout << std::endl;
-        }
-
-        std::cout << "b_k_n: " << std::endl;
-        for(int i = 0; i < N; i++)
-        {
-            for(int j = 0; j < K; j++)
-            {
-                ck::pk_i4_t i4x2 = b_k_n(j, i);
-                int8_t i4 = 0;
-                if( j % 2 == 1)
-                    i4 = (i4x2 >> 0) & 0xf;
-                else
-                    i4 = (i4x2 >> 4) & 0xf;
-                i4 = i4 - 8;
-                std::cout << ck::type_convert<float>(i4) << ",";
-            }
-            std::cout << std::endl;
-        }
-
-        std::cout << "c_m_n_device_result: " << std::endl;
-        for(int i = 0; i < M; i++)
-        {
-            for(int j = 0; j < N; j++)
-            {
-                std::cout << ck::type_convert<float>(c_m_n_device_result(i, j)) << ",";
-            }
-            std::cout << std::endl;
-        }
-
-        std::cout << "c_m_n_host_result: " << std::endl;
-        for(int i = 0; i < M; i++)
-        {
-            for(int j = 0; j < N; j++)
-            {
-                std::cout << ck::type_convert<float>(c_m_n_host_result(i, j)) << ",";
-            }
-            std::cout << std::endl;
-        }
-#endif
     }
 
     if(config.time_kernel)

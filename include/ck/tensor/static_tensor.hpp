@@ -165,8 +165,7 @@ struct StaticTensorTupleOfVectorBuffer
 
     // Get X
     // Idx is for S, not X. Idx should be aligned with X
-    template <typename X,
-              typename Idx>
+    template <typename X, typename Idx>
     __host__ __device__ constexpr X GetAsType(Idx) const
     {
         constexpr auto coord = make_tensor_coordinate(desc_, to_multi_index(Idx{}));
@@ -196,8 +195,7 @@ struct StaticTensorTupleOfVectorBuffer
 
     // Set X
     // Idx is for S, not X. Idx should be aligned with X
-    template <typename X,
-              typename Idx>
+    template <typename X, typename Idx>
     __host__ __device__ constexpr void SetAsType(Idx, X x)
     {
         constexpr auto coord = make_tensor_coordinate(desc_, to_multi_index(Idx{}));
