@@ -319,7 +319,7 @@ bool run_gemm_splitk_example(int argc, char* argv[])
     ProblemSizeSplitK problem_size;
     ExecutionConfig config;
 
-    return !parse_cmd_args(argc, argv, problem_size, config) || run_gemm(problem_size, config);
+    return parse_cmd_args(argc, argv, problem_size, config) && run_gemm(problem_size, config);
 }
 
 int main(int argc, char* argv[]) { return !run_gemm_splitk_example(argc, argv); }
