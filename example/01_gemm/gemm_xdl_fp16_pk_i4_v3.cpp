@@ -20,7 +20,6 @@ using BElementOp = PassThrough;
 using CElementOp = PassThrough;
 
 static constexpr auto GemmDefault = ck::tensor_operation::device::GemmSpecialization::Default;
-
 static constexpr bool PermuteB = true;
 
 static constexpr ck::index_t KPerBlock = 128;
