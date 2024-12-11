@@ -45,6 +45,17 @@ using DeviceGemmV2Instance =
         S<2, 128, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
         2, 32, 32, 0,
         1, 1, S<1, 32, 1, 8>, 8,
+
+        // 128, Scale_Block_N, Scale_Block_K,
+        // 16, 128,
+        // KPerBlock, 8, 32,
+        // 16,   16,
+        // 1,    4,
+        // S<16, 8, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
+        // 2, 8, 8, 0,
+        // S<4, 32, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
+        // 2, 32, 32, 0,
+        // 1, 1, S<1, 16, 1, 8>, 4,
         ck::BlockGemmPipelineScheduler::Intrawave, ck::BlockGemmPipelineVersion::v3, CDataType, CDataType, false, PermuteB>;
 
 // clang-format on
@@ -273,6 +284,7 @@ bool run_gemm(const ProblemType& problem_size, const ExecutionConfig& config)
                           StrideA,
                           StrideB,
                           StrideC,
+                          Scale_Stride_BN,
                           static_cast<BScaleDataType*>(b1_scale_device_buf.GetDeviceBuffer()),
                           KBatch,
                           a_element_op,

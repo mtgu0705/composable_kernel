@@ -100,6 +100,7 @@ struct DeviceGemmV2BScale : public BaseOperator
                         ck::index_t StrideA,
                         ck::index_t StrideB,
                         ck::index_t StrideC,
+                        ck::index_t StrideScaleB,
                         const void* p_b_scale,
                         ck::index_t KSplit,
                         AElementwiseOperation a_element_op,
