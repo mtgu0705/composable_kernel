@@ -591,7 +591,7 @@ rocm_package_setup_component(profiler
 )
 add_subdirectory(profiler)
 
-if(CK_USE_CODEGEN AND (GPU_TARGETS MATCHES "gfx9" OR GPU_ARCHS))
+if(CK_USE_CODEGEN AND (SUPPORTED_GPU_TARGETS MATCHES "gfx9" OR GPU_ARCHS))
   add_subdirectory(codegen)
 endif()
 
