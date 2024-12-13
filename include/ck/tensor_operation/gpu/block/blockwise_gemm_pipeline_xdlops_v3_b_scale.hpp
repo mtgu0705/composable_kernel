@@ -346,6 +346,7 @@ struct BlockwiseGemmXdlops_pipeline_v3_b_scale<BlockGemmPipelineScheduler::Intra
         }
 
         constexpr auto num_scale_k_block = BScaleThreadDesc{}.GetLength(I1);
+        constexpr auto num_scale_krepeat = KRepeat / num_scale_k_block;
 
         // Local prefill 1
         a_blockwise_copy.RunWrite(a_block_desc, a_block_buf);
@@ -373,13 +374,14 @@ struct BlockwiseGemmXdlops_pipeline_v3_b_scale<BlockGemmPipelineScheduler::Intra
                                    a_thread_buf);
             });
             static_for<0, NRepeat, 1>{}([&](auto n0) {
-                b_thread_copy_.Run(b_block_desc_n0_n1_n2_k,
-                                   make_tuple(n0, I0, I0, Number<k0 * BMmaKStride>{}),
-                                   b_block_buf,
-                                   b_scale_thread_buf[Number<n0 * num_scale_k_block + k0/num_scale_k_block>{}],
-                                   b_thread_desc_,
-                                   make_tuple(n0, I0, k0, I0),
-                                   b_thread_buf);
+                b_thread_copy_.Run(
+                    b_block_desc_n0_n1_n2_k,
+                    make_tuple(n0, I0, I0, Number<k0 * BMmaKStride>{}),
+                    b_block_buf,
+                    b_scale_thread_buf[Number<n0 * num_scale_k_block + k0 / num_scale_krepeat>{}],
+                    b_thread_desc_,
+                    make_tuple(n0, I0, k0, I0),
+                    b_thread_buf);
             });
         });
 
@@ -469,7 +471,8 @@ struct BlockwiseGemmXdlops_pipeline_v3_b_scale<BlockGemmPipelineScheduler::Intra
                         b_thread_copy_.Run(b_block_desc_n0_n1_n2_k,
                                            make_tuple(n0, I0, I0, Number<k0 * BMmaKStride>{}),
                                            b_block_buf,
-                                           b_scale_thread_buf[Number<n0 * num_scale_k_block + k0/num_scale_k_block>{}],
+                                           b_scale_thread_buf[Number<n0 * num_scale_k_block +
+                                                                     k0 / num_scale_krepeat>{}],
                                            b_thread_desc_,
                                            make_tuple(n0, I0, k0, I0),
                                            b_thread_buf);

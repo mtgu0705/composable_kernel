@@ -1424,16 +1424,24 @@ struct GridwiseGemm_xdl_cshuffle_v3
 
         // b scale
         // static_assert(KPerBlock <= ScaleBlockK);
-        const index_t ScaleSliceSizeN = NXdlPerWave;
-        const index_t ScaleSliceSizeK = (KPerBlock + ScaleBlockK - 1) / ScaleBlockK;
+        static constexpr auto mfma        = MfmaSelector<ComputeTypeA, MPerXdl, NPerXdl>{};
+        static constexpr auto KPerXdlops  = mfma.GetKPerXdlops();
+        static constexpr auto K1PerXdlops = mfma.GetK1PerXdlops();
+        static constexpr auto K0PerXdlops = KPerXdlops / K1PerXdlops;
+        static constexpr auto KPerThread  = KPerBlock / K0PerXdlops;
+
+        static constexpr auto ScaleSliceSizeN       = NXdlPerWave;
+        static constexpr auto ScaleSliceSizeK       = (KPerThread + ScaleBlockK - 1) / ScaleBlockK;
+        static constexpr auto KBlockScaleSliceSizeK = (KPerBlock + ScaleBlockK - 1) / ScaleBlockK;
 
         constexpr auto b_scale_thread_desc = make_naive_tensor_descriptor_packed(
             make_tuple(Number<ScaleSliceSizeN>{}, Number<ScaleSliceSizeK>{}));
 
         constexpr index_t NWaves = NPerBlock / (NXdlPerWave * NPerXdl);
 
-        auto b_thread_offset =
+        auto b_thread_offset_n =
             get_thread_local_1d_id() % NPerXdl + (get_thread_local_1d_id() / 64) % NWaves * NPerXdl;
+        auto b_thread_offset_k = (get_thread_local_1d_id() % 64) / NPerXdl * KPerThread;
 
         auto b_scale_thread_copy =
             ThreadwiseTensorSliceTransfer_v2<BScaleType,
@@ -1443,16 +1451,17 @@ struct GridwiseGemm_xdl_cshuffle_v3
                                              Sequence<1, ScaleSliceSizeK>,
                                              Sequence<0, 1>,
                                              1,
-                                             1,
+                                             ScaleSliceSizeK,
                                              1,
                                              false>(
                 b_scale_grid_desc_bn_ak,
-                make_multi_index(block_n_id * NPerBlock / ScaleBlockN + b_thread_offset, 0));
+                make_multi_index(block_n_id * NPerBlock / ScaleBlockN + b_thread_offset_n,
+                                 b_thread_offset_k / ScaleBlockK));
 
         constexpr auto b_scale_thread_slice_copy_step =
             make_tuple(make_multi_index(NWaves * NPerXdl, 0),
                        make_multi_index(-NPerBlock, 0),
-                       make_multi_index(-NPerBlock, ScaleSliceSizeK));
+                       make_multi_index(-NPerBlock, KBlockScaleSliceSizeK));
 
         const index_t num_k_block_per_scale = (ScaleBlockK + KPerBlock - 1) / KPerBlock;
 
