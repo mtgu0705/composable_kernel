@@ -21,8 +21,8 @@ using CElementOp = PassThrough;
 
 static constexpr auto GemmDefault = ck::tensor_operation::device::GemmSpecialization::Default;
 
-static constexpr bool PermuteA = false;
-static constexpr bool PermuteB = true;
+static constexpr bool PermuteA         = false;
+static constexpr bool PermuteB         = true;
 static constexpr ck::index_t KPerBlock = 128;
 
 // clang-format off
