@@ -345,6 +345,8 @@ struct BlockwiseGemmXdlops_pipeline_v3_b_scale<BlockGemmPipelineScheduler::Intra
                                                    b_scale_thread_copy_step.At(Number<1>{}));
         }
 
+        constexpr auto num_scale_k_block = BScaleThreadDesc{}.GetLength(I1);
+
         // Local prefill 1
         a_blockwise_copy.RunWrite(a_block_desc, a_block_buf);
         b_blockwise_copy.RunWrite(b_block_desc, b_block_buf);
@@ -374,7 +376,7 @@ struct BlockwiseGemmXdlops_pipeline_v3_b_scale<BlockGemmPipelineScheduler::Intra
                 b_thread_copy_.Run(b_block_desc_n0_n1_n2_k,
                                    make_tuple(n0, I0, I0, Number<k0 * BMmaKStride>{}),
                                    b_block_buf,
-                                   b_scale_thread_buf[n0],
+                                   b_scale_thread_buf[Number<n0 * num_scale_k_block + k0/num_scale_k_block>{}],
                                    b_thread_desc_,
                                    make_tuple(n0, I0, k0, I0),
                                    b_thread_buf);
@@ -467,7 +469,7 @@ struct BlockwiseGemmXdlops_pipeline_v3_b_scale<BlockGemmPipelineScheduler::Intra
                         b_thread_copy_.Run(b_block_desc_n0_n1_n2_k,
                                            make_tuple(n0, I0, I0, Number<k0 * BMmaKStride>{}),
                                            b_block_buf,
-                                           b_scale_thread_buf[n0],
+                                           b_scale_thread_buf[Number<n0 * num_scale_k_block + k0/num_scale_k_block>{}],
                                            b_thread_desc_,
                                            make_tuple(n0, I0, k0, I0),
                                            b_thread_buf);
