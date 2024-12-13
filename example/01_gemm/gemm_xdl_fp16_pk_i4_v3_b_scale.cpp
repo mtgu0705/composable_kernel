@@ -27,7 +27,7 @@ static constexpr bool PermuteB = true;
 static constexpr ck::index_t Scale_Block_N = 1;
 static constexpr ck::index_t Scale_Block_K = 128;
 
-static constexpr ck::index_t KPerBlock = 64;
+static constexpr ck::index_t KPerBlock = 256;
 
 // clang-format off
 using DeviceGemmV2Instance = 
@@ -35,27 +35,27 @@ using DeviceGemmV2Instance =
         ALayout,   BLayout,  CLayout,   
         ADataType, BDataType, BScaleDataType, CDataType, AccDataType, CShuffleDataType, 
         AElementOp, BElementOp, CElementOp, GemmDefault, 
-        256, Scale_Block_N, Scale_Block_K,
-        128, 128,
-        KPerBlock, 8, 32,
-        32,   32,
-        4,    1,
-        S<8, 32, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
-        2, 8, 8, 0,
-        S<2, 128, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
-        2, 32, 32, 0,
-        1, 1, S<1, 32, 1, 8>, 8,
-
-        // 128, Scale_Block_N, Scale_Block_K,
-        // 16, 128,
+        // 256, Scale_Block_N, Scale_Block_K,
+        // 128, 128,
         // KPerBlock, 8, 32,
-        // 16,   16,
-        // 1,    4,
-        // S<16, 8, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
+        // 32,   32,
+        // 4,    1,
+        // S<8, 32, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
         // 2, 8, 8, 0,
-        // S<4, 32, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
+        // S<2, 128, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
         // 2, 32, 32, 0,
-        // 1, 1, S<1, 16, 1, 8>, 4,
+        // 1, 1, S<1, 32, 1, 8>, 8,
+
+        256, Scale_Block_N, Scale_Block_K,
+        16, 128,
+        KPerBlock, 8, 32,
+        16,   16,
+        1,    2,
+        S<32, 8, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
+        2, 8, 8, 0,
+        S<8, 32, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
+        2, 32, 32, 0,
+        1, 2, S<1, 16, 1, 16>, 8,
         ck::BlockGemmPipelineScheduler::Intrawave, ck::BlockGemmPipelineVersion::v3, CDataType, CDataType, false, PermuteB>;
 
 // clang-format on
@@ -374,9 +374,9 @@ bool run_gemm(const ProblemType& problem_size, const ExecutionConfig& config)
         std::cout<<"scale_b1_k_n: "<<std::endl;
         for(int i = 0; i < N; i++)
         {
-            for(int j = 0; j < K; j++)
+            for(int j = 0; j < (K + Scale_Block_K - 1) / Scale_Block_K; j++)
             {
-                std::cout << ck::type_convert<float>(b1_k_n(i,j)) << ",";
+                std::cout << ck::type_convert<float>(b1_k_n(j,i)) << ",";
             }
             std::cout << std::endl;
         }
