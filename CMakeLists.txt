@@ -581,7 +581,7 @@ if(NOT GPU_ARCHS AND USER_GPU_TARGETS)
    )
    add_subdirectory(example)
    if(BUILD_TESTING)
-	add_subdirectory(test)
+	   add_subdirectory(test)
    endif()
 endif()
 
