@@ -407,7 +407,8 @@ struct GridwiseGemm_xdl_cshuffle_v3
             }
             else
             {
-                // Weight Tile Permute
+                // Pre-shuffled Weight 
+                // BGlobal[K / KPerBlock, N, KPerBlock / K1, K1] -> BTile[K / K1, N, K1]
                 constexpr index_t BK01 = KPerBlock / BK1Value;
                 // const index_t BK00     = BK0 / BK01;
                 const index_t BK0_ = StrideB / BK1Value;

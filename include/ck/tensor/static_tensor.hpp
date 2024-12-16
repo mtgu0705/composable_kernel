@@ -165,7 +165,11 @@ struct StaticTensorTupleOfVectorBuffer
 
     // Get X
     // Idx is for S, not X. Idx should be aligned with X
-    template <typename X, typename Idx>
+    template <typename X,
+              typename Idx,
+              typename enable_if<(has_same_scalar_type<S, X>::value || !is_native_type<S>()) &&
+                                     is_known_at_compile_time<Idx>::value && Idx::Size() == ndim_,
+                                 bool>::type = false>
     __host__ __device__ constexpr X GetAsType(Idx) const
     {
         constexpr auto coord = make_tensor_coordinate(desc_, to_multi_index(Idx{}));
@@ -195,7 +199,11 @@ struct StaticTensorTupleOfVectorBuffer
 
     // Set X
     // Idx is for S, not X. Idx should be aligned with X
-    template <typename X, typename Idx>
+    template <typename X,
+              typename Idx,
+              typename enable_if<(has_same_scalar_type<S, X>::value || !is_native_type<S>()) &&
+                                     is_known_at_compile_time<Idx>::value && Idx::Size() == ndim_,
+                                 bool>::type = false>
     __host__ __device__ constexpr void SetAsType(Idx, X x)
     {
         constexpr auto coord = make_tensor_coordinate(desc_, to_multi_index(Idx{}));
