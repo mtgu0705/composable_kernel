@@ -12,6 +12,9 @@
 
 namespace ck {
 
+// Fast int4x4 to half8_t data type conversion based on paper 
+// [Who Says Elephants Can't Run: Bringing Large Scale MoE Models into Cloud Scale Production]
+// (https://arxiv.org/abs/2211.10017) and implementation: 
 // https://github.com/NVIDIA/FasterTransformer/blob/main/src/fastertransformer/cutlass_extensions/include/cutlass_extensions/interleaved_numeric_conversion.h
 __host__ __device__ inline half4_t pki4_to_half4(int q)
 {
