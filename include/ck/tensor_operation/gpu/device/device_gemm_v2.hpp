@@ -37,6 +37,7 @@ struct DeviceGemmV2 : public BaseOperator
 
     virtual std::unique_ptr<BaseInvoker> MakeInvokerPointer() = 0;
 
+    virtual bool GetPermuteA()         = 0;
     virtual bool GetPermuteB()         = 0;
     virtual ck::index_t GetKPerBlock() = 0;
 };

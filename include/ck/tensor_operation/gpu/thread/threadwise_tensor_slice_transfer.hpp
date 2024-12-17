@@ -1137,7 +1137,6 @@ struct ThreadwiseTensorSliceTransfer_v4
             }
             else if constexpr(SrcBuffer::IsStaticBuffer())
             {
-                static_assert(false, "");
                 static_for<0, SrcScalarPerVector, 1>{}([&](auto i) {
                     constexpr index_t src_offset = src_desc.CalculateOffset(
                         src_ref_to_origin_disp_idx + data_to_origin_disp_idx +
