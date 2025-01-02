@@ -2,9 +2,9 @@
 // Copyright (c) 2018-2023, Advanced Micro Devices, Inc. All rights reserved.
 
 #include "ck/ck.hpp"
-#include "ck/tensor_operation/gpu/device/tensor_layout.hpp"
 #include "ck/tensor_operation/gpu/device/gemm_specialization.hpp"
 #include "ck/tensor_operation/gpu/device/impl/device_gemm_xdl_cshuffle_v3_b_scale.hpp"
+#include "ck/tensor_operation/gpu/device/tensor_layout.hpp"
 
 #include "ck/library/tensor_operation_instance/add_device_operation_instance.hpp"
 

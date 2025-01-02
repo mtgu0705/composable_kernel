@@ -52,13 +52,6 @@ using ReferenceGemmInstance = ck::tensor_operation::host::ReferenceGemm<ADataTyp
                                                                         PassThrough,
                                                                         PassThrough,
                                                                         PassThrough>;
-using ReferenceGemmInstance = ck::tensor_operation::host::ReferenceGemm<ADataType,
-                                                                        BDataType,
-                                                                        CDataType,
-                                                                        AccDataType,
-                                                                        PassThrough,
-                                                                        PassThrough,
-                                                                        PassThrough>;
 template <typename ProblemType>
 bool run_gemm(const ProblemType& problem_size, const ExecutionConfig& config)
 {

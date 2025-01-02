@@ -41,6 +41,32 @@ __host__ __device__ inline half4_t pki4_to_half4(int q)
     res.template AsType<half2_t>()(Number<1>{}) = amd_assembly_pk_fma_f16(
         bit_cast<half2_t>(hi), bit_cast<half2_t>(MUL), bit_cast<half2_t>(ADD));
 
+    return res.template AsType<half4_t>()[Number<0>{}];
+}
+
+__host__ __device__ inline half4_t pki4_to_half4_scale(int q, const ck::half2_t& scale)
+{
+    const int LO = 0x000f000f;
+    const int HI = 0x00f000f0;
+    const int EX = 0x64006400;
+
+    // Extract the two int4 at low bit and create two fp16 number.
+    int lo = amd_assembly_and_or_b32(q, LO, EX);
+    // Extract the two int4 at hight bit and create two fp16 number.
+    int hi = amd_assembly_and_or_b32(q, HI, EX);
+
+    const int SUB = 0xE408E408; // half2 {-1032, -1032}
+    const int MUL = 0x2c002c00; // half2 {1 / 16, 1 / 16}
+    const int ADD = 0xd480d480; // half2 {-72, -72}
+
+    vector_type<half_t, 4> res;
+
+    res.template AsType<half2_t>()(Number<0>{}) =
+        amd_assembly_pk_add_f16(bit_cast<half2_t>(lo), bit_cast<half2_t>(SUB));
+
+    res.template AsType<half2_t>()(Number<1>{}) = amd_assembly_pk_fma_f16(
+        bit_cast<half2_t>(hi), bit_cast<half2_t>(MUL), bit_cast<half2_t>(ADD));
+
     asm volatile("v_pk_mul_f16 %0, %1, %2"
                  : "=v"(res.template AsType<half2_t>()(Number<0>{}))
                  : "v"(res.template AsType<half2_t>()(Number<0>{})), "v"(scale));
@@ -51,64 +77,6 @@ __host__ __device__ inline half4_t pki4_to_half4(int q)
 
     return res.template AsType<half4_t>()[Number<0>{}];
 }
-
-// Further fuse the scale into inline assembly, sanity failed
-#if 0
-__host__ __device__ inline half4_t pki4_to_half4_scale(int q, const ck::half_t& scale)
-{
-    constexpr int LO = 0x000f000f;
-    constexpr int HI = 0x00f000f0;
-    constexpr int EX = 0x64006400;
-    // Guarantee that the `(a & b) | c` operations are LOP3s.
-    // int lo = lop3<(0xf0 & 0xcc) | 0xaa>(q, LO, EX);
-    // int hi = lop3<(0xf0 & 0xcc) | 0xaa>(q, HI, EX);
-    int lo = amd_assembly_and_or_b32(q, LO, EX);
-    int hi = amd_assembly_and_or_b32(q, HI, EX);
-    // We want signed int4 outputs, hence we fuse the `-8` symmetric zero point
-    // directly into `SUB` and `ADD`.
-    // constexpr int SUB = 0xE408E408; //-8
-    // constexpr int MUL = 0x2c002c00; // 1/16
-    // constexpr int ADD = 0xd480d480; //-79
-    constexpr half_t SUB = bit_cast<half_t>(static_cast<uint16_t>(0xE408));
-    constexpr half_t MUL = bit_cast<half_t>(static_cast<uint16_t>(0x2c00));
-    constexpr half_t ADD = bit_cast<half_t>(static_cast<uint16_t>(0xd480));
-
-    vector_type<half_t, 2> scale_2;
-    scale_2.template AsType<half_t>()(Number<0>{}) = scale;
-    scale_2.template AsType<half_t>()(Number<1>{}) = scale;
-    vector_type<half_t, 2> sub_2;
-    sub_2.template AsType<half_t>()(Number<0>{}) = SUB * scale;
-    sub_2.template AsType<half_t>()(Number<1>{}) = SUB * scale;
-    vector_type<half_t, 2> mul_2;
-    mul_2.template AsType<half_t>()(Number<0>{}) = MUL * scale;
-    mul_2.template AsType<half_t>()(Number<1>{}) = MUL * scale;
-    vector_type<half_t, 2> add_2;
-    add_2.template AsType<half_t>()(Number<0>{}) = ADD * scale;
-    add_2.template AsType<half_t>()(Number<1>{}) = ADD * scale;
-
-    vector_type<half_t, 4> res;
-
-    res.template AsType<half2_t>()(Number<0>{}) =
-        amd_assembly_pk_fma_f16(bit_cast<half2_t>(lo),
-                                scale_2.template AsType<half2_t>()(Number<0>{}),
-                                sub_2.template AsType<half2_t>()(Number<0>{}));
-
-    res.template AsType<half2_t>()(Number<1>{}) =
-        amd_assembly_pk_fma_f16(bit_cast<half2_t>(hi),
-                                mul_2.template AsType<half2_t>()(Number<0>{}),
-                                add_2.template AsType<half2_t>()(Number<0>{}));
-
-    // asm volatile("v_pk_mul_f16 %0, %1, %2"
-    //              : "=v"(res.template AsType<half2_t>()(Number<0>{}))
-    //              : "v"(res.template AsType<half2_t>()(Number<0>{})), "v"(scale));
-
-    // asm volatile("v_pk_mul_f16 %0, %1, %2"
-    //              : "=v"(res.template AsType<half2_t>()(Number<1>{}))
-    //              : "v"(res.template AsType<half2_t>()(Number<1>{})), "v"(scale));
-
-    return res.template AsType<half4_t>()[Number<0>{}];
-}
-#endif
 
 __host__ __device__ inline half2_t pki4_to_half2(pk_i4_t q)
 {
