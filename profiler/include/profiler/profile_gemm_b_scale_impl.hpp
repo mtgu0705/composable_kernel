@@ -159,7 +159,7 @@ bool profile_gemm_b_scale_impl(int do_verification,
         {
             for(int k = 0; k < K; k++)
             {
-                ck::pk_i4_t i4x2 = b_k_n(k, n);
+                ck::pk_i4_t i4x2 = b_k_n(k, n).data;
                 int8_t i4        = 0;
                 if(k % 2 == 1)
                     i4 = (i4x2 >> 0) & 0xf;
@@ -227,7 +227,7 @@ bool profile_gemm_b_scale_impl(int do_verification,
 
                     for(int k = 0; k < 4; k++)
                     {
-                        int i4x2         = b_k_n_permute(j + k * 2, i);
+                        int i4x2         = b_k_n_permute(j + k * 2, i).data;
                         input[k * 2 + 0] = (i4x2 >> 4) & 0xf;
                         input[k * 2 + 1] = (i4x2 >> 0) & 0xf;
                     }

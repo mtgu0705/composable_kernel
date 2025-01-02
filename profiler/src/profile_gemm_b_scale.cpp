@@ -165,12 +165,6 @@ int profile_gemm_b_scale(int argc, char* argv[])
         return pass ? 0 : 1;
     };
 
-    // if(data_type == GemmDataType::F16_I4_F16 && layout == GemmMatrixLayout::MK_NK_MN &&
-    // B_scale_block == BScaleBlockTile::K_64)
-    // {
-    //     return profile(F16{}, I4{}, F16{}, F16{}, F32{}, F16{}, ck::Number<64>{}, Row{}, Col{},
-    //     Row{});
-    // }
     if(data_type == GemmDataType::F16_I4_F16 && layout == GemmMatrixLayout::MK_NK_MN &&
        B_scale_block == BScaleBlockTile::K_128)
     {

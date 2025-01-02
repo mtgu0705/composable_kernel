@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "ck/utility/amd_inline_asm.hpp"
 #include "ck/utility/data_type.hpp"
 #include "ck/utility/math.hpp"
 #include "ck/utility/math_v2.hpp"
 #include "ck/utility/type_convert.hpp"
+#include "ck/utility/amd_inline_asm.hpp"
 #include <cassert>
 
 namespace ck {
@@ -254,11 +254,11 @@ struct UnaryOpBase
     public:
     __host__ __device__ ~UnaryOpBase() = default;
 
-    __host__ __device__ constexpr UnaryOpBase()                    = default;
-    __host__ __device__ constexpr UnaryOpBase(const UnaryOpBase&)  = default;
-    __host__ __device__ constexpr UnaryOpBase(UnaryOpBase&&)       = default;
+    __host__ __device__ constexpr UnaryOpBase()                   = default;
+    __host__ __device__ constexpr UnaryOpBase(const UnaryOpBase&) = default;
+    __host__ __device__ constexpr UnaryOpBase(UnaryOpBase&&)      = default;
     __host__ __device__ UnaryOpBase& operator=(const UnaryOpBase&) = default;
-    __host__ __device__ UnaryOpBase& operator=(UnaryOpBase&&)      = default;
+    __host__ __device__ UnaryOpBase& operator=(UnaryOpBase&&) = default;
 
     __host__ __device__ virtual inline void operator()(float& y, const float& x) const = 0;
 
@@ -306,12 +306,12 @@ struct PassThroughPack2
 
 struct PassThrough final : public UnaryOpBase
 {
-    __host__ __device__ constexpr PassThrough()                    = default;
-    __host__ __device__ constexpr PassThrough(const PassThrough&)  = default;
-    __host__ __device__ constexpr PassThrough(PassThrough&&)       = default;
+    __host__ __device__ constexpr PassThrough()                   = default;
+    __host__ __device__ constexpr PassThrough(const PassThrough&) = default;
+    __host__ __device__ constexpr PassThrough(PassThrough&&)      = default;
     __host__ __device__ PassThrough& operator=(const PassThrough&) = default;
-    __host__ __device__ PassThrough& operator=(PassThrough&&)      = default;
-    __host__ __device__ ~PassThrough()                             = default;
+    __host__ __device__ PassThrough& operator=(PassThrough&&) = default;
+    __host__ __device__ ~PassThrough()                        = default;
 
     __host__ __device__ inline void operator()(float& y, const float& x) const final { y = x; }
 
@@ -677,12 +677,12 @@ struct UnarySquare
 
 struct UnaryAbs final : public UnaryOpBase
 {
-    __host__ __device__ constexpr UnaryAbs()                 = default;
-    __host__ __device__ constexpr UnaryAbs(const UnaryAbs&)  = default;
-    __host__ __device__ constexpr UnaryAbs(UnaryAbs&&)       = default;
+    __host__ __device__ constexpr UnaryAbs()                = default;
+    __host__ __device__ constexpr UnaryAbs(const UnaryAbs&) = default;
+    __host__ __device__ constexpr UnaryAbs(UnaryAbs&&)      = default;
     __host__ __device__ UnaryAbs& operator=(const UnaryAbs&) = default;
-    __host__ __device__ UnaryAbs& operator=(UnaryAbs&&)      = default;
-    __host__ __device__ ~UnaryAbs()                          = default;
+    __host__ __device__ UnaryAbs& operator=(UnaryAbs&&) = default;
+    __host__ __device__ ~UnaryAbs()                     = default;
 
     __host__ __device__ inline void operator()(float& y, const float& x) const final
     {
@@ -734,12 +734,12 @@ struct UnarySqrt
 
 struct Relu final : public UnaryOpBase
 {
-    __host__ __device__ constexpr Relu()             = default;
-    __host__ __device__ constexpr Relu(const Relu&)  = default;
-    __host__ __device__ constexpr Relu(Relu&&)       = default;
+    __host__ __device__ constexpr Relu()            = default;
+    __host__ __device__ constexpr Relu(const Relu&) = default;
+    __host__ __device__ constexpr Relu(Relu&&)      = default;
     __host__ __device__ Relu& operator=(const Relu&) = default;
-    __host__ __device__ Relu& operator=(Relu&&)      = default;
-    __host__ __device__ ~Relu()                      = default;
+    __host__ __device__ Relu& operator=(Relu&&) = default;
+    __host__ __device__ ~Relu()                 = default;
 
     __host__ __device__ inline void operator()(float& y, const float& x) const final
     {
@@ -915,12 +915,12 @@ struct Gelu
 
 struct Sigmoid final : public UnaryOpBase
 {
-    __host__ __device__ constexpr Sigmoid()                = default;
-    __host__ __device__ constexpr Sigmoid(const Sigmoid&)  = default;
-    __host__ __device__ constexpr Sigmoid(Sigmoid&&)       = default;
+    __host__ __device__ constexpr Sigmoid()               = default;
+    __host__ __device__ constexpr Sigmoid(const Sigmoid&) = default;
+    __host__ __device__ constexpr Sigmoid(Sigmoid&&)      = default;
     __host__ __device__ Sigmoid& operator=(const Sigmoid&) = default;
-    __host__ __device__ Sigmoid& operator=(Sigmoid&&)      = default;
-    __host__ __device__ ~Sigmoid()                         = default;
+    __host__ __device__ Sigmoid& operator=(Sigmoid&&) = default;
+    __host__ __device__ ~Sigmoid()                    = default;
 
     __host__ __device__ inline void operator()(float& y, const float& x) const final
     {
@@ -976,12 +976,12 @@ struct Silu
 
 struct TanH final : public UnaryOpBase
 {
-    __host__ __device__ constexpr TanH()             = default;
-    __host__ __device__ constexpr TanH(const TanH&)  = default;
-    __host__ __device__ constexpr TanH(TanH&&)       = default;
+    __host__ __device__ constexpr TanH()            = default;
+    __host__ __device__ constexpr TanH(const TanH&) = default;
+    __host__ __device__ constexpr TanH(TanH&&)      = default;
     __host__ __device__ TanH& operator=(const TanH&) = default;
-    __host__ __device__ TanH& operator=(TanH&&)      = default;
-    __host__ __device__ ~TanH()                      = default;
+    __host__ __device__ TanH& operator=(TanH&&) = default;
+    __host__ __device__ ~TanH()                 = default;
 
     __host__ __device__ inline void operator()(float& y, const float& x) const final
     {
