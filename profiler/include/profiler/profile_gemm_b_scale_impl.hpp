@@ -8,18 +8,18 @@
 #include <typeinfo>
 
 #include "ck/ck.hpp"
-#include "ck/tensor_operation/gpu/device/impl/device_gemm_xdl_cshuffle_v3_b_scale.hpp"
 #include "ck/tensor_operation/gpu/device/tensor_layout.hpp"
+#include "ck/tensor_operation/gpu/device/impl/device_gemm_xdl_cshuffle_v3_b_scale.hpp"
 #include "ck/tensor_operation/gpu/element/element_wise_operation.hpp"
 
 #include "ck/library/tensor_operation_instance/gpu/gemm_b_scale.hpp"
 
-#include "ck/library/reference_tensor_operation/cpu/reference_gemm.hpp"
 #include "ck/library/utility/check_err.hpp"
 #include "ck/library/utility/device_memory.hpp"
 #include "ck/library/utility/host_tensor.hpp"
 #include "ck/library/utility/host_tensor_generator.hpp"
 #include "ck/library/utility/literals.hpp"
+#include "ck/library/reference_tensor_operation/cpu/reference_gemm.hpp"
 
 namespace ck {
 namespace profiler {
@@ -162,9 +162,9 @@ bool profile_gemm_b_scale_impl(int do_verification,
                 ck::pk_i4_t i4x2 = b_k_n(k, n).data;
                 int8_t i4        = 0;
                 if(k % 2 == 1)
-                    i4 = (i4x2 >> 0) & 0xf;
+                    i4 = (i4x2.data >> 0) & 0xf;
                 else
-                    i4 = (i4x2 >> 4) & 0xf;
+                    i4 = (i4x2.data >> 4) & 0xf;
                 i4  = i4 - 8;
                 v_b = ck::type_convert<float>(i4);
 
@@ -218,64 +218,61 @@ bool profile_gemm_b_scale_impl(int do_verification,
                 }
             }
 
-            // vector pk_i4x4 permute
-            for(int i = 0; i < N; i++)
+            if(is_same_v<BDataType, pk_i4_t> && is_same_v<ADataType, half_t>)
             {
-                for(int j = 0; j < K; j += 8)
+                // vector pk_i4x4 permute
+                for(int i = 0; i < N; i++)
                 {
-                    int input[8];
-
-                    for(int k = 0; k < 4; k++)
+                    for(int j = 0; j < K; j += 8)
                     {
-                        int i4x2         = b_k_n_permute(j + k * 2, i).data;
-                        input[k * 2 + 0] = (i4x2 >> 4) & 0xf;
-                        input[k * 2 + 1] = (i4x2 >> 0) & 0xf;
-                    }
+                        int input[8];
 
-                    // permute 01234567->20643175
-                    {
-                        int hi   = input[2];
-                        int lo   = input[0];
-                        int i4x2 = (hi << 4) | lo;
+                        for(int k = 0; k < 4; k++)
+                        {
+                            int i4x2         = b_k_n_permute(j + k * 2, i).data;
+                            input[k * 2 + 0] = (i4x2 >> 4) & 0xf;
+                            input[k * 2 + 1] = (i4x2 >> 0) & 0xf;
+                        }
 
-                        b_k_n_permute(j + 0, i) = i4x2;
-                    }
+                        // permute 01234567->20643175
+                        {
+                            int hi   = input[2];
+                            int lo   = input[0];
+                            int i4x2 = (hi << 4) | lo;
 
-                    {
-                        int hi   = input[6];
-                        int lo   = input[4];
-                        int i4x2 = (hi << 4) | lo;
+                            b_k_n_permute(j + 0, i) = i4x2;
+                        }
 
-                        b_k_n_permute(j + 2, i) = i4x2;
-                    }
+                        {
+                            int hi   = input[6];
+                            int lo   = input[4];
+                            int i4x2 = (hi << 4) | lo;
 
-                    {
-                        int hi   = input[3];
-                        int lo   = input[1];
-                        int i4x2 = (hi << 4) | lo;
+                            b_k_n_permute(j + 2, i) = i4x2;
+                        }
 
-                        b_k_n_permute(j + 4, i) = i4x2;
-                    }
+                        {
+                            int hi   = input[3];
+                            int lo   = input[1];
+                            int i4x2 = (hi << 4) | lo;
 
-                    {
-                        int hi   = input[7];
-                        int lo   = input[5];
-                        int i4x2 = (hi << 4) | lo;
+                            b_k_n_permute(j + 4, i) = i4x2;
+                        }
 
-                        b_k_n_permute(j + 6, i) = i4x2;
+                        {
+                            int hi   = input[7];
+                            int lo   = input[5];
+                            int i4x2 = (hi << 4) | lo;
+
+                            b_k_n_permute(j + 6, i) = i4x2;
+                        }
                     }
                 }
             }
         }
         else
         {
-            for(int i = 0; i < N; i++)
-            {
-                for(int j = 0; j < K; j++)
-                {
-                    b_k_n_permute(i * K + j) = b_k_n(i * K + j);
-                }
-            }
+            b_k_n_permute = b_k_n;
         }
 
         b_device_buf.ToDevice(b_k_n_permute.mData.data());
