@@ -205,7 +205,7 @@ struct PassThroughPack8
         dst.template AsType<bhalf2_t>()(Number<3>{}) =
             pki4_to_bhalf2(src.template AsType<pk_i4_t>()[Number<3>{}]);
 
-        y          = dst.template AsType<bhalf8_t>()[Number<0>{}];
+        y = dst.template AsType<bhalf8_t>()[Number<0>{}];
 #endif
     }
     constexpr const static bool is_pack8_invocable = true;
@@ -240,7 +240,7 @@ struct DequantPack8
         dst.template AsType<half2_t>()(Number<3>{}) =
             pki4_to_half2(src.template AsType<pk_i4_t>()[Number<3>{}]);
 
-        y = dst.template AsType<half8_t>()[Number<0>{}];
+        y          = dst.template AsType<half8_t>()[Number<0>{}];
 #endif
     }
 
