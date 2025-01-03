@@ -105,8 +105,6 @@ int profile_gemm_b_scale(int argc, char* argv[])
 
     using F32  = float;
     using F16  = ck::half_t;
-    using BF16 = ck::bhalf_t;
-    using F8   = ck::f8_t;
     using I4   = ck::pk_i4_t;
 
     using Row = ck::tensor_layout::gemm::RowMajor;
