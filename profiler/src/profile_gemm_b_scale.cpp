@@ -103,9 +103,9 @@ int profile_gemm_b_scale(int argc, char* argv[])
         printf("n_warmup:%d, n_iter:%d, rotating:%lu\n", n_warmup, n_iter, rotating);
     }
 
-    using F32  = float;
-    using F16  = ck::half_t;
-    using I4   = ck::pk_i4_t;
+    using F32 = float;
+    using F16 = ck::half_t;
+    using I4  = ck::pk_i4_t;
 
     using Row = ck::tensor_layout::gemm::RowMajor;
     using Col = ck::tensor_layout::gemm::ColumnMajor;

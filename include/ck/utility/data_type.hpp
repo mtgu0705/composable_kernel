@@ -20,7 +20,7 @@ struct pk_i4_t
     __host__ __device__ constexpr pk_i4_t() : data{type{}} {}
     __host__ __device__ constexpr pk_i4_t(type init) : data{init} {}
 
-    __host__ __device__ constexpr operator float() const { return static_cast<float>(data); }
+    __host__ __device__ constexpr operator float() const { return static_cast<int8_t>(data); }
 };
 
 inline constexpr auto next_pow2(uint32_t x)
