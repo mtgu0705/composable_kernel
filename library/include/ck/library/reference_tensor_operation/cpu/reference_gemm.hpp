@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2018-2023, Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2018-2024, Advanced Micro Devices, Inc. All rights reserved.
 
 #pragma once
 
@@ -62,9 +62,9 @@ struct ReferenceGemm : public device::BaseOperator
             auto f_mk_kn_mn = [&](auto m, auto n) {
                 const int K = arg.a_m_k_.mDesc.GetLengths()[1];
 
-                AccDataType v_acc = 0;
-                ComputeTypeA v_a  = 0;
-                ComputeTypeB v_b  = 0;
+                AccDataType v_acc{0};
+                ComputeTypeA v_a{0};
+                ComputeTypeB v_b{0};
 
                 for(int k = 0; k < K; ++k)
                 {
@@ -76,7 +76,7 @@ struct ReferenceGemm : public device::BaseOperator
                     }
                     else if constexpr(is_same_v<ADataType, pk_i4_t>)
                     {
-                        pk_i4_t i4x2 = arg.a_m_k_(m, k);
+                        uint8_t i4x2 = arg.a_m_k_(m, k).data;
                         int8_t i4    = 0;
                         if(k % 2 == 1)
                             i4 = (i4x2 >> 0) & 0xf;
@@ -97,7 +97,7 @@ struct ReferenceGemm : public device::BaseOperator
                     }
                     else if constexpr(is_same_v<BDataType, pk_i4_t>)
                     {
-                        pk_i4_t i4x2 = arg.b_k_n_(k, n);
+                        uint8_t i4x2 = arg.b_k_n_(k, n).data;
                         int8_t i4    = 0;
                         if(k % 2 == 1)
                             i4 = (i4x2 >> 0) & 0xf;
@@ -115,7 +115,7 @@ struct ReferenceGemm : public device::BaseOperator
                         ck::type_convert<AccDataType>(v_a) * ck::type_convert<AccDataType>(v_b);
                 }
 
-                CDataType v_c = 0;
+                CDataType v_c{0};
 
                 arg.c_element_op_(v_c, v_acc);
 

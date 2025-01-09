@@ -69,8 +69,9 @@ bool profile_gemm_universal_impl(int do_verification,
     Tensor<CDataType> c_m_n_host_result(f_host_tensor_descriptor(M, N, StrideC, CLayout{}));
     Tensor<CDataType> c_m_n_device_result(f_host_tensor_descriptor(M, N, StrideC, CLayout{}));
 
-    int total_gemm_needed = a_m_k.GetElementSpaceSizeInBytes() + b_k_n.GetElementSpaceSizeInBytes();
-    int rotating_count    = std::max(
+    std::size_t total_gemm_needed =
+        a_m_k.GetElementSpaceSizeInBytes() + b_k_n.GetElementSpaceSizeInBytes();
+    int rotating_count = std::max(
         1,
         std::min(n_iter,
                  static_cast<int>(std::ceil(static_cast<double>(rotating) / total_gemm_needed))));
@@ -148,6 +149,7 @@ bool profile_gemm_universal_impl(int do_verification,
     }
 
     std::string best_op_name;
+    std::optional<std::string> best_op_object_name;
     float best_ave_time   = 0;
     float best_tflops     = 0;
     float best_gb_per_sec = 0;
@@ -175,64 +177,61 @@ bool profile_gemm_universal_impl(int do_verification,
                 }
             }
 
-            // vector pk_i4x4 permute
-            for(int i = 0; i < N; i++)
+            if(is_same_v<BDataType, pk_i4_t> && is_same_v<ADataType, half_t>)
             {
-                for(int j = 0; j < K; j += 8)
+                // vector pk_i4x4 permute
+                for(int i = 0; i < N; i++)
                 {
-                    int input[8];
-
-                    for(int k = 0; k < 4; k++)
+                    for(int j = 0; j < K; j += 8)
                     {
-                        int i4x2         = b_k_n_permute(j + k * 2, i);
-                        input[k * 2 + 0] = (i4x2 >> 4) & 0xf;
-                        input[k * 2 + 1] = (i4x2 >> 0) & 0xf;
-                    }
+                        int input[8];
 
-                    // permute 01234567->20643175
-                    {
-                        int hi   = input[2];
-                        int lo   = input[0];
-                        int i4x2 = (hi << 4) | lo;
+                        for(int k = 0; k < 4; k++)
+                        {
+                            int i4x2         = b_k_n_permute(j + k * 2, i);
+                            input[k * 2 + 0] = (i4x2 >> 4) & 0xf;
+                            input[k * 2 + 1] = (i4x2 >> 0) & 0xf;
+                        }
 
-                        b_k_n_permute(j + 0, i) = i4x2;
-                    }
+                        // permute 01234567->20643175
+                        {
+                            int hi   = input[2];
+                            int lo   = input[0];
+                            int i4x2 = (hi << 4) | lo;
 
-                    {
-                        int hi   = input[6];
-                        int lo   = input[4];
-                        int i4x2 = (hi << 4) | lo;
+                            b_k_n_permute(j + 0, i) = i4x2;
+                        }
 
-                        b_k_n_permute(j + 2, i) = i4x2;
-                    }
+                        {
+                            int hi   = input[6];
+                            int lo   = input[4];
+                            int i4x2 = (hi << 4) | lo;
 
-                    {
-                        int hi   = input[3];
-                        int lo   = input[1];
-                        int i4x2 = (hi << 4) | lo;
+                            b_k_n_permute(j + 2, i) = i4x2;
+                        }
 
-                        b_k_n_permute(j + 4, i) = i4x2;
-                    }
+                        {
+                            int hi   = input[3];
+                            int lo   = input[1];
+                            int i4x2 = (hi << 4) | lo;
 
-                    {
-                        int hi   = input[7];
-                        int lo   = input[5];
-                        int i4x2 = (hi << 4) | lo;
+                            b_k_n_permute(j + 4, i) = i4x2;
+                        }
 
-                        b_k_n_permute(j + 6, i) = i4x2;
+                        {
+                            int hi   = input[7];
+                            int lo   = input[5];
+                            int i4x2 = (hi << 4) | lo;
+
+                            b_k_n_permute(j + 6, i) = i4x2;
+                        }
                     }
                 }
             }
         }
         else
         {
-            for(int i = 0; i < N; i++)
-            {
-                for(int j = 0; j < K; j++)
-                {
-                    b_k_n_permute(i * K + j) = b_k_n(i * K + j);
-                }
-            }
+            b_k_n_permute = b_k_n;
         }
 
         b_device_buf.ToDevice(b_k_n_permute.mData.data());
@@ -310,7 +309,8 @@ bool profile_gemm_universal_impl(int do_verification,
                     }
                 }
 
-                std::string op_name = op_ptr->GetTypeString();
+                std::string op_name                    = op_ptr->GetTypeString();
+                std::optional<std::string> op_obj_name = op_ptr->GetObjectName();
 
                 float ave_time = invoker_ptr->Run(argument_ptr.get(),
                                                   StreamConfig{nullptr,
@@ -344,11 +344,12 @@ bool profile_gemm_universal_impl(int do_verification,
 
                 if(tflops > best_tflops && ave_time > 1e-10)
                 {
-                    best_op_name    = op_name;
-                    best_tflops     = tflops;
-                    best_ave_time   = ave_time;
-                    best_gb_per_sec = gb_per_sec;
-                    best_kbatch     = kbatch_curr;
+                    best_op_name        = op_name;
+                    best_op_object_name = op_obj_name;
+                    best_tflops         = tflops;
+                    best_ave_time       = ave_time;
+                    best_gb_per_sec     = gb_per_sec;
+                    best_kbatch         = kbatch_curr;
                 }
             }
             else
@@ -398,6 +399,9 @@ bool profile_gemm_universal_impl(int do_verification,
               << " StrideB = " << StrideB << " StrideC = " << StrideC << " KBatch = " << best_kbatch
               << " : " << best_ave_time << " ms, " << best_tflops << " TFlops, " << best_gb_per_sec
               << " GB/s, " << best_op_name << std::endl;
+
+    if(best_op_object_name)
+        std::cout << best_op_object_name.value() << std::endl;
 
     return pass;
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2018-2023, Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2024, Advanced Micro Devices, Inc. All rights reserved.
 
 #include "common.hpp"
 
@@ -27,7 +27,6 @@ using DeviceGemmV2Instance =
         ALayout,   BLayout,  CLayout,   
         ADataType, BDataType, CDataType, AccDataType, CShuffleDataType, 
         AElementOp, BElementOp, CElementOp, GemmDefault, 
-#if 1
         64,
         16, 16, 
         256, 8, 16,
@@ -39,19 +38,6 @@ using DeviceGemmV2Instance =
         2, 16, 16, 0,
         1, 1, S<1, 16, 1, 4>, 4,
         ck::BlockGemmPipelineScheduler::Interwave, ck::BlockGemmPipelineVersion::v1>;
-#else
-        128,
-        16, 32, 
-        128, 8, 16,
-        16,   16,
-        1,    1, 
-        S<16, 8, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
-        2, 8, 8, 0,
-        S<8, 16, 1>,  S<1, 0, 2>,  S<1, 0, 2>,
-        2, 16, 16, 0,
-        1, 1, S<1, 16, 1, 8>, 4,
-        ck::BlockGemmPipelineScheduler::Interwave, ck::BlockGemmPipelineVersion::v1>;
-#endif
 // clang-format on
 
 using ReferenceGemmInstance = ck::tensor_operation::host::ReferenceGemm<ADataType,

@@ -639,6 +639,7 @@ struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2<ALayout,
 
     index_t GetKPerBlock() override { return KPerBlock; }
 
+    bool GetPermuteA() override { return PermuteA; }
     bool GetPermuteB() override { return PermuteB; }
 
     static auto MakeArgument(const ADataType* p_a,
@@ -737,6 +738,7 @@ struct DeviceGemm_Xdl_CShuffleV3 : public DeviceGemmV2<ALayout,
 
         return str.str();
     }
+    REGISTER_EXTRA_PRINTING_METHODS
 };
 
 } // namespace device

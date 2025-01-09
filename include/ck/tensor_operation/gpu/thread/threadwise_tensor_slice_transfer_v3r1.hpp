@@ -82,9 +82,9 @@ struct ThreadwiseTensorSliceTransfer_v3r1
             static_assert(is_same_v<remove_cvref_t<SrcData>, remove_cvref_t<DstData>>,
                           "SrcData != DstData");
 
-            static_assert(SrcScalarPerVector_ % PackedSize == 0 &&
-                              DstScalarPerVector_ % PackedSize == 0,
-                          "SrcScalarPerVector_ and DstScalarPerVector_ cannot be 1");
+            static_assert(
+                SrcScalarPerVector_ % PackedSize == 0 && DstScalarPerVector_ % PackedSize == 0,
+                "SrcScalarPerVector_ and DstScalarPerVector_ cannot be 1 for packed data type");
 
             static_assert(SrcVectorDim == DstVectorDim, "pk_i4_t does not support transpose");
         }
@@ -234,8 +234,6 @@ struct ThreadwiseTensorSliceTransfer_v3r1
             using src_elem_op_vec_t = typename vector_type<SrcData, elem_op_vec_len>::type;
             using dst_elem_op_vec_t = typename vector_type<DstData, elem_op_vec_len>::type;
 
-            static_assert(elem_op_vec_len == 1, "elem_op_vec_len != 1");
-
             auto src_vector_container = src_vector_type{
                 src_buf.template Get<src_vector_t>(src_coord_.GetOffset() / PackedSize, true)};
 
@@ -300,13 +298,10 @@ struct ThreadwiseTensorSliceTransfer_v3r1
     TransferDataFromSrcThreadScratchToDstThreadScratch(Number<ThreadScratchId> thread_scratch_id)
     {
 #if !CK_EXPERIMENTAL_USE_IN_REGISTER_SUB_DWORD_TRANSPOSE
-        static_assert(false, "");
         static_ford<SliceLengths>{}([&](auto idx) {
             dst_thread_scratch_(idx) = src_thread_scratch_tuple_[thread_scratch_id][idx];
         });
 #else
-
-#if 1
         // OOB Check
         constexpr auto src_scalar_per_access = generate_sequence(
             detail::lambda_scalar_per_access<SrcVectorDim, SrcScalarPerVector_>{}, Number<nDim>{});
@@ -369,7 +364,6 @@ struct ThreadwiseTensorSliceTransfer_v3r1
             src_thread_scratch_tuple_(thread_scratch_id)
                 .template SetAsType<vector_t>(src_data_idx_seq, op_r_v);
         });
-#endif
 
         // sub-dword transpose between src_thread_scratch_ and dst_thread_scratch_
         // TODO make this logic more generic for more sub-dword datatype
@@ -381,9 +375,8 @@ struct ThreadwiseTensorSliceTransfer_v3r1
                       (is_same<f8_t, remove_cvref_t<DstData>>::value &&
                        SrcScalarPerVector % 4 == 0 && DstScalarPerVector % 4 == 0)))
         {
-            // static_assert(is_same_v<remove_cvref_t<SrcData>, pk_i4_t>,
-            //"transpose is not allowed for pk_i4_t");
-#if 1
+            static_assert(!is_same_v<remove_cvref_t<SrcData>, pk_i4_t>,
+                          "in-register transpose is not supported for pk_i4_t");
             // each transpose does
             // DstScalarPerVector # of src vectors in src_thread_scratch_
             // SrcScalarPerVector # of dst vectors in dst_thread_scratch_
@@ -441,7 +434,6 @@ struct ThreadwiseTensorSliceTransfer_v3r1
                 transpose_vectors<DstData, DstScalarPerVector, SrcScalarPerVector>{}(
                     src_vector_refs, dst_vector_refs);
             });
-#endif
         }
         else
         {
